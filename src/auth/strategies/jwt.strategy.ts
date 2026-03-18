@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../../users/users.service';
 import { UserRole } from '../../users/types/user.types';
 
 export interface JwtPayload {
@@ -12,7 +13,10 @@ export interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    private usersService: UsersService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -24,10 +28,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!payload.sub) {
       throw new UnauthorizedException();
     }
+
+    const user = await this.usersService.findById(payload.sub);
+
+    if (!user || !user.is_active) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+    const rolesNames = user.roles.map((r) => r.name);
+
     return {
-      userId: payload.sub,
-      username: payload.username,
-      roles: payload.roles || [],
+      userId: user.id,
+      username: user.email,
+      roles: rolesNames,
     };
   }
 }
