@@ -28,6 +28,7 @@ export interface User {
   first_name: string;
   last_name: string;
   roles: RoleResponse[];
+  emergency_contacts: EmergencyContact[];
   profile_image_url?: string;
   is_verified: boolean;
   is_active: boolean;
@@ -43,6 +44,7 @@ export interface UserResponse {
   first_name: string;
   last_name: string;
   roles: RoleResponse[];
+  emergency_contacts: EmergencyContact[];
   profile_image_url?: string;
   is_verified: boolean;
   is_active: boolean;

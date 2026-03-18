@@ -80,9 +80,21 @@ export class UsersService {
     return { ...user, roles } as User;
   }
 
+  private async enrichUserWithAll(user: any): Promise<User> {
+    const roles = await this.getUserRoles(user.id);
+    const emergency_contacts = await this.getEmergencyContacts(user.id);
+    return { ...user, roles, emergency_contacts } as User;
+  }
+
   private async enrichUsersWithRoles(users: any[]): Promise<User[]> {
     return Promise.all(
       users.map(async (user) => this.enrichUserWithRoles(user)),
+    );
+  }
+
+  private async enrichUsersWithAll(users: any[]): Promise<User[]> {
+    return Promise.all(
+      users.map(async (user) => this.enrichUserWithAll(user)),
     );
   }
 
@@ -97,7 +109,7 @@ export class UsersService {
       return undefined;
     }
 
-    return this.enrichUserWithRoles(data);
+    return this.enrichUserWithAll(data);
   }
 
   async findById(id: string): Promise<User | undefined> {
@@ -111,7 +123,7 @@ export class UsersService {
       return undefined;
     }
 
-    return this.enrichUserWithRoles(data);
+    return this.enrichUserWithAll(data);
   }
 
   async create(
@@ -152,7 +164,7 @@ export class UsersService {
     const roleName = 'CITIZEN';
     await this.setUserRoles(userId, roleName);
 
-    const user = await this.enrichUserWithRoles(data);
+    const user = await this.enrichUserWithAll(data);
     return this.toUserResponse(user);
   }
 
@@ -201,7 +213,7 @@ export class UsersService {
       throw new Error(error?.message || 'Failed to update user');
     }
 
-    const user = await this.enrichUserWithRoles(data);
+    const user = await this.enrichUserWithAll(data);
     return this.toUserResponse(user);
   }
 
@@ -243,7 +255,7 @@ export class UsersService {
       };
     }
 
-    const users = await this.enrichUsersWithRoles(data);
+    const users = await this.enrichUsersWithAll(data);
     const totalPages = Math.ceil(count / safeLimit);
 
     return {
