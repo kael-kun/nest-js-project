@@ -66,7 +66,6 @@ export interface UserListResponse {
 
 export interface EmergencyContact {
   id: string;
-  user_id: string;
   name: string;
   phone: string;
   relationship?: string;

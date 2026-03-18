@@ -328,7 +328,7 @@ export class UsersService {
   async getEmergencyContacts(userId: string): Promise<EmergencyContact[]> {
     const { data, error } = await this.supabase.client
       .from('emergency_contacts')
-      .select('id,user_id,name,phone,relationship,created_at')
+      .select('id,name,phone,relationship,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
