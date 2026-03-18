@@ -1,4 +1,5 @@
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
+import { IsOptional } from 'class-validator';
 
 export interface MulterFile {
   fieldname: string;
@@ -22,11 +23,10 @@ export class FileValidationPipe implements PipeTransform<MulterFile> {
 
   private readonly MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-  transform(file: MulterFile): MulterFile {
+  transform(file: MulterFile): MulterFile | undefined {
     if (!file) {
-      throw new BadRequestException('File is required');
+      return undefined;
     }
-
     if (file.size > this.MAX_SIZE) {
       throw new BadRequestException(
         `File size exceeds maximum allowed size of 5MB`,
