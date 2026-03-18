@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { EventsModule } from './events/events.module';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseModule } from './supabase/supabase.module';
@@ -25,6 +26,7 @@ import { CloudflareR2Module } from './r2_bucket/cloudflareR2.module';
     CloudflareR2Module,
     AuthModule,
     UsersModule,
+    OrganizationsModule,
     UserRolesModule,
     EventsModule,
   ],

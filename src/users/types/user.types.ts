@@ -1,3 +1,5 @@
+import { OrganizationResponse } from '../../organizations/types/organization.types';
+
 export type UserRole = 'CITIZEN' | 'DISPATCHER' | 'RESPONDER' | 'ADMIN';
 
 export interface Role {
@@ -29,6 +31,7 @@ export interface User {
   last_name: string;
   roles: RoleResponse[];
   emergency_contacts: EmergencyContact[];
+  organizations: OrganizationResponse[];
   profile_image_url?: string;
   is_verified: boolean;
   is_active: boolean;
@@ -45,6 +48,7 @@ export interface UserResponse {
   last_name: string;
   roles: RoleResponse[];
   emergency_contacts: EmergencyContact[];
+  organizations: OrganizationResponse[];
   profile_image_url?: string;
   is_verified: boolean;
   is_active: boolean;

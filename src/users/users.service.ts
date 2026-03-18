@@ -15,6 +15,7 @@ import {
   UserRole,
   RoleResponse,
 } from './types/user.types';
+import { OrganizationResponse } from '../organizations/types/organization.types';
 import {
   CreateUserDto,
   UpdateUserDto,
@@ -83,7 +84,44 @@ export class UsersService {
   private async enrichUserWithAll(user: any): Promise<User> {
     const roles = await this.getUserRoles(user.id);
     const emergency_contacts = await this.getEmergencyContacts(user.id);
-    return { ...user, roles, emergency_contacts } as User;
+    const organizations = await this.getUserOrganizations(user.id);
+    return { ...user, roles, emergency_contacts, organizations } as User;
+  }
+
+  private async getUserOrganizations(
+    userId: string,
+  ): Promise<OrganizationResponse[]> {
+    const { data, error } = await this.supabase.client
+      .from('user_organizations')
+      .select(
+        'organization_id, organizations:organizations(id,name,short_name,code,type,level,region,province,city,barangay,address,phone,website,is_active,created_at)',
+      )
+      .eq('citizen_id', userId)
+      .eq('is_active', true);
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data
+      .map((item: any) => ({
+        id: item.organizations?.id,
+        name: item.organizations?.name,
+        short_name: item.organizations?.short_name,
+        code: item.organizations?.code,
+        type: item.organizations?.type,
+        level: item.organizations?.level,
+        region: item.organizations?.region,
+        province: item.organizations?.province,
+        city: item.organizations?.city,
+        barangay: item.organizations?.barangay,
+        address: item.organizations?.address,
+        phone: item.organizations?.phone,
+        website: item.organizations?.website,
+        is_active: item.organizations?.is_active,
+        created_at: item.organizations?.created_at,
+      }))
+      .filter((org: OrganizationResponse) => org.id);
   }
 
   private async enrichUsersWithRoles(users: any[]): Promise<User[]> {
@@ -93,9 +131,7 @@ export class UsersService {
   }
 
   private async enrichUsersWithAll(users: any[]): Promise<User[]> {
-    return Promise.all(
-      users.map(async (user) => this.enrichUserWithAll(user)),
-    );
+    return Promise.all(users.map(async (user) => this.enrichUserWithAll(user)));
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
@@ -106,7 +142,7 @@ export class UsersService {
       .single<User | null>();
 
     if (error || !data) {
-      return undefined;
+      throw new NotFoundException('User not found');
     }
 
     return this.enrichUserWithAll(data);
@@ -120,7 +156,7 @@ export class UsersService {
       .single<User | null>();
 
     if (error || !data) {
-      return undefined;
+      throw new NotFoundException('User not found');
     }
 
     return this.enrichUserWithAll(data);
