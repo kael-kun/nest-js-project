@@ -142,7 +142,7 @@ export class UsersService {
       .single<User | null>();
 
     if (error || !data) {
-      throw new NotFoundException('User not found');
+      return undefined;
     }
 
     return this.enrichUserWithAll(data);
@@ -201,6 +201,7 @@ export class UsersService {
     await this.setUserRoles(userId, roleName);
 
     const user = await this.enrichUserWithAll(data);
+
     return this.toUserResponse(user);
   }
 
