@@ -1,6 +1,21 @@
-import { OrganizationResponse } from '../../organizations/types/organization.types';
+import {
+  OrganizationResponse,
+  OrganizationType,
+  OrganizationLevel,
+} from '../../organizations/types/organization.types';
+import {
+  OrgMemberRole,
+  OrgMemberStatus,
+  ResponderStatus,
+} from '../../organizations/types/dto.types';
 
-export type UserRole = 'CITIZEN' | 'DISPATCHER' | 'RESPONDER' | 'ADMIN';
+export type UserRole =
+  | 'CITIZEN'
+  | 'DISPATCHER'
+  | 'RESPONDER'
+  | 'ADMIN'
+  | 'ORG_ADMIN'
+  | 'FIRST_AIDER';
 
 export interface Role {
   id: string;
@@ -31,7 +46,7 @@ export interface User {
   last_name: string;
   roles: RoleResponse[];
   emergency_contacts: EmergencyContact[];
-  organizations: OrganizationResponse[];
+  organizations: UserOrganizationMembership[];
   profile_image_url?: string;
   is_verified: boolean;
   is_active: boolean;
@@ -48,7 +63,7 @@ export interface UserResponse {
   last_name: string;
   roles: RoleResponse[];
   emergency_contacts: EmergencyContact[];
-  organizations: OrganizationResponse[];
+  organizations: UserOrganizationMembership[];
   profile_image_url?: string;
   is_verified: boolean;
   is_active: boolean;
@@ -70,4 +85,31 @@ export interface EmergencyContact {
   phone: string;
   relationship?: string;
   created_at: string;
+}
+
+export interface UserOrganizationMembership {
+  id: string;
+  organization_id: string;
+  org_type: OrganizationType;
+  org_role: OrgMemberRole;
+  responder_type?: string;
+  status: OrgMemberStatus;
+  responder_status?: ResponderStatus;
+  is_available?: boolean;
+  location?: { type: string; coordinates: [number, number] };
+  created_at: string;
+  organization: {
+    id: string;
+    name: string;
+    short_name?: string;
+    code: string;
+    type: OrganizationType;
+    level: OrganizationLevel;
+    parent_organization_id?: string;
+    region?: string;
+    province?: string;
+    city?: string;
+    barangay?: string;
+    is_active: boolean;
+  }[];
 }

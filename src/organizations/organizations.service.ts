@@ -2,20 +2,34 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
   Organization,
   OrganizationResponse,
   OrganizationListResponse,
+  OrganizationMember,
+  OrganizationMemberResponse,
+  OrganizationMemberListResponse,
+  UserMembership,
+  UserMembershipListResponse,
 } from './types/organization.types';
 import {
   CreateOrganizationDto,
   UpdateOrganizationDto,
+  InviteMemberDto,
+  UpdateMemberDto,
+  OrgMemberRole,
+  OrgMemberStatus,
 } from './types/dto.types';
 
 const ORGANIZATION_FIELDS =
-  'id,name,short_name,code,type,level,region,province,city,barangay,address,phone,website,is_active,created_at,updated_at';
+  'id,name,short_name,code,type,level,parent_organization_id,allowed_roles,allowed_responder_types,region,province,city,barangay,address,phone,website,is_active,created_at,updated_at';
+
+const MEMBER_FIELDS =
+  'id,user_id,organization_id,org_type,org_role,responder_type,status,responder_status,is_available,invited_by,reason,location,created_at,updated_at';
 
 @Injectable()
 export class OrganizationsService {
@@ -101,21 +115,14 @@ export class OrganizationsService {
 
   async create(
     createOrganizationDto: CreateOrganizationDto,
+    creatorUserId: string,
   ): Promise<OrganizationResponse> {
     const existing = await this.findByCode(createOrganizationDto.code);
     if (existing) {
       throw new ConflictException('Organization code already exists');
     }
 
-    const { data: userdata, error: userDataError } = await this.supabase.client
-      .from('users')
-      .select('id')
-      .eq('citizen_id', createOrganizationDto.citizen_id)
-      .single();
-
-    if (userDataError || !userdata) {
-      throw new NotFoundException('User not found');
-    }
+    const defaultRoles = this.getDefaultRolesByType(createOrganizationDto.type);
 
     const { data, error } = await this.supabase.client
       .from('organizations')
@@ -125,6 +132,10 @@ export class OrganizationsService {
         code: createOrganizationDto.code,
         type: createOrganizationDto.type,
         level: createOrganizationDto.level,
+        parent_organization_id: createOrganizationDto.parent_organization_id,
+        allowed_roles: createOrganizationDto.allowed_roles || defaultRoles,
+        allowed_responder_types:
+          createOrganizationDto.allowed_responder_types || [],
         region: createOrganizationDto.region,
         province: createOrganizationDto.province,
         city: createOrganizationDto.city,
@@ -142,39 +153,21 @@ export class OrganizationsService {
       );
     }
 
-    const { error: userError } = await this.supabase.client
-      .from('user_organizations')
-      .insert({
-        citizen_id: createOrganizationDto.citizen_id,
-        organization_id: data.id,
-      });
-
-    if (userError) {
-      throw new ConflictException(userError.message);
-    }
-
-    const { data: roles, error: roleError } = await this.supabase.client
-      .from('roles')
-      .select('id')
-      .eq('name', 'ORGANIZATION')
-      .single();
-
-    if (roleError) {
-      throw new ConflictException(roleError.message);
-    }
-
-    const { error: userRoleError } = await this.supabase.client
-      .from('user_roles')
-      .insert({
-        user_id: userdata.id,
-        role_id: roles?.id,
-      });
-
-    if (userRoleError) {
-      throw new ConflictException(userRoleError.message);
-    }
-
     return this.toResponse(data);
+  }
+
+  private getDefaultRolesByType(type: string): string[] {
+    const roleCeiling: Record<string, string[]> = {
+      POLICE: ['RESPONDER', 'DISPATCHER'],
+      AMBULANCE: ['RESPONDER', 'DISPATCHER'],
+      FIRE: ['RESPONDER', 'DISPATCHER'],
+      COAST_GUARD: ['RESPONDER', 'DISPATCHER'],
+      PRIVATE: ['RESPONDER', 'DISPATCHER'],
+      LGU: ['RESPONDER', 'DISPATCHER'],
+      OCD: ['RESPONDER', 'DISPATCHER'],
+      BARANGAY: ['RESPONDER', 'DISPATCHER'],
+    };
+    return roleCeiling[type] || ['RESPONDER', 'DISPATCHER'];
   }
 
   async update(
@@ -191,6 +184,14 @@ export class OrganizationsService {
         code: updateOrganizationDto.code ?? existing.code,
         type: updateOrganizationDto.type ?? existing.type,
         level: updateOrganizationDto.level ?? existing.level,
+        parent_organization_id:
+          updateOrganizationDto.parent_organization_id ??
+          existing.parent_organization_id,
+        allowed_roles:
+          updateOrganizationDto.allowed_roles ?? existing.allowed_roles,
+        allowed_responder_types:
+          updateOrganizationDto.allowed_responder_types ??
+          existing.allowed_responder_types,
         region: updateOrganizationDto.region ?? existing.region,
         province: updateOrganizationDto.province ?? existing.province,
         city: updateOrganizationDto.city ?? existing.city,
@@ -225,25 +226,347 @@ export class OrganizationsService {
     }
   }
 
-  async getUserOrganizations(
-    citizenId: string,
-  ): Promise<OrganizationResponse[]> {
-    const { data, error } = await this.supabase.client
-      .from('user_organizations')
-      .select('organization_id, organizations:organizations(*)')
-      .eq('citizen_id', citizenId)
-      .eq('is_active', true);
+  async inviteMember(
+    organizationId: string,
+    userId: string,
+    orgRole: OrgMemberRole,
+    responderType?: string,
+  ): Promise<OrganizationMemberResponse> {
+    const org = await this.findById(organizationId);
 
-    if (error || !data) {
-      return [];
+    if (!org.allowed_roles.includes(orgRole)) {
+      throw new BadRequestException(
+        `Role ${orgRole} is not allowed for this organization`,
+      );
     }
 
-    return data
-      .map((item: any) => this.toResponse(item.organizations))
-      .filter((org) => org.id);
+    if (orgRole === OrgMemberRole.RESPONDER && responderType) {
+      if (
+        org.allowed_responder_types.length > 0 &&
+        !org.allowed_responder_types.includes(responderType)
+      ) {
+        throw new BadRequestException(
+          `Responder type ${responderType} is not allowed for this organization`,
+        );
+      }
+    }
+
+    const { data: existingMember } = await this.supabase.client
+      .from('organization_members')
+      .select('id, status')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .in('status', ['INVITED', 'ACTIVE'])
+      .single();
+
+    if (existingMember) {
+      throw new ConflictException(
+        'User is already a member or has pending invitation',
+      );
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        org_type: org.type,
+        org_role: orgRole,
+        responder_type: responderType,
+        status: OrgMemberStatus.INVITED,
+      })
+      .select(
+        `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
+      )
+      .single<OrganizationMember | null>();
+
+    if (error || !data) {
+      throw new BadRequestException(
+        error?.message || 'Failed to invite member',
+      );
+    }
+
+    return this.toMemberResponse(data);
+  }
+
+  async acceptInvite(
+    memberId: string,
+    userId: string,
+  ): Promise<OrganizationMemberResponse> {
+    const member = await this.getMemberById(memberId);
+
+    if (member.user_id !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to accept this invitation',
+      );
+    }
+
+    if (member.status !== OrgMemberStatus.INVITED) {
+      throw new BadRequestException('Invitation is not in INVITED status');
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .update({
+        status: OrgMemberStatus.ACTIVE,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', memberId)
+      .select(
+        `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
+      )
+      .single<OrganizationMember | null>();
+
+    if (error || !data) {
+      throw new BadRequestException(
+        error?.message || 'Failed to accept invitation',
+      );
+    }
+
+    await this.addGlobalRole(userId, member.org_role);
+
+    return this.toMemberResponse(data);
+  }
+
+  async declineInvite(memberId: string, userId: string): Promise<void> {
+    const member = await this.getMemberById(memberId);
+
+    if (member.user_id !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to decline this invitation',
+      );
+    }
+
+    if (member.status !== OrgMemberStatus.INVITED) {
+      throw new BadRequestException('Invitation is not in INVITED status');
+    }
+
+    const { error } = await this.supabase.client
+      .from('organization_members')
+      .update({
+        status: OrgMemberStatus.DECLINED,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', memberId);
+
+    if (error) {
+      throw new BadRequestException(
+        error?.message || 'Failed to decline invitation',
+      );
+    }
+  }
+
+  async suspendMember(
+    memberId: string,
+    reason: string,
+  ): Promise<OrganizationMemberResponse> {
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .update({
+        status: OrgMemberStatus.SUSPENDED,
+        reason: reason,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', memberId)
+      .select(
+        `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
+      )
+      .single<OrganizationMember | null>();
+
+    if (error || !data) {
+      throw new BadRequestException(
+        error?.message || 'Failed to suspend member',
+      );
+    }
+
+    return this.toMemberResponse(data);
+  }
+
+  async updateMember(
+    memberId: string,
+    updateDto: UpdateMemberDto,
+  ): Promise<OrganizationMemberResponse> {
+    if (updateDto.status === 'SUSPENDED' && updateDto.reason) {
+      return this.suspendMember(memberId, updateDto.reason);
+    }
+    throw new BadRequestException('Invalid update operation');
+  }
+
+  async removeMember(memberId: string): Promise<void> {
+    const { error } = await this.supabase.client
+      .from('organization_members')
+      .delete()
+      .eq('id', memberId);
+
+    if (error) {
+      throw new BadRequestException(
+        error?.message || 'Failed to remove member',
+      );
+    }
+  }
+
+  async promoteToOrgAdmin(
+    memberId: string,
+  ): Promise<OrganizationMemberResponse> {
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .update({
+        org_role: OrgMemberRole.ORG_ADMIN,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', memberId)
+      .select(
+        `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
+      )
+      .single<OrganizationMember | null>();
+
+    if (error || !data) {
+      throw new BadRequestException(
+        error?.message || 'Failed to promote member',
+      );
+    }
+
+    return this.toMemberResponse(data);
+  }
+
+  async getOrgMembers(
+    organizationId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<OrganizationMemberListResponse> {
+    const safeLimit = Math.min(limit, 100);
+    const safePage = Math.max(page, 1);
+    const offset = (safePage - 1) * safeLimit;
+
+    const { count, error: countError } = await this.supabase.client
+      .from('organization_members')
+      .select(MEMBER_FIELDS, { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .in('status', ['INVITED', 'ACTIVE']);
+
+    if (countError || !count) {
+      return {
+        members: [],
+        total: 0,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: 0,
+      };
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .select(
+        `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
+      )
+      .eq('organization_id', organizationId)
+      .in('status', ['INVITED', 'ACTIVE'])
+      .order('created_at', { ascending: false })
+      .range(offset, offset + safeLimit - 1);
+
+    if (error || !data) {
+      return {
+        members: [],
+        total: count,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(count / safeLimit),
+      };
+    }
+
+    const members = data.map((m) => this.toMemberResponse(m));
+    const totalPages = Math.ceil(count / safeLimit);
+
+    return {
+      members,
+      total: count,
+      page: safePage,
+      limit: safeLimit,
+      totalPages,
+    };
+  }
+
+  private async getMemberById(memberId: string): Promise<OrganizationMember> {
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .select(MEMBER_FIELDS)
+      .eq('id', memberId)
+      .single<OrganizationMember | null>();
+
+    if (error || !data) {
+      throw new NotFoundException('Member not found');
+    }
+
+    return data;
+  }
+
+  private async checkOrgAdminRole(
+    userId: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('org_role', OrgMemberRole.ORG_ADMIN)
+      .eq('status', 'ACTIVE')
+      .single();
+
+    return !!data && !error;
+  }
+
+  private async addGlobalRole(
+    userId: string,
+    orgRole: OrgMemberRole,
+  ): Promise<void> {
+    const roleName =
+      orgRole === OrgMemberRole.ORG_ADMIN ? 'ORG_ADMIN' : orgRole;
+
+    const { data: roleData } = await this.supabase.client
+      .from('roles')
+      .select('id')
+      .eq('name', roleName)
+      .single();
+
+    if (roleData) {
+      const { data: existing } = await this.supabase.client
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('role_id', roleData.id)
+        .single();
+
+      if (!existing) {
+        await this.supabase.client.from('user_roles').insert({
+          user_id: userId,
+          role_id: roleData.id,
+        });
+      }
+    }
   }
 
   private toResponse(org: Organization): OrganizationResponse {
     return org as OrganizationResponse;
+  }
+
+  private toMemberResponse(member: any): OrganizationMemberResponse {
+    return {
+      id: member.id,
+      user_id: member.user_id,
+      organization_id: member.organization_id,
+      org_type: member.org_type,
+      org_role: member.org_role,
+      responder_type: member.responder_type,
+      status: member.status,
+      responder_status: member.responder_status,
+      is_available: member.is_available,
+      invited_by: member.invited_by,
+      reason: member.reason,
+      location: member.location,
+      created_at: member.created_at,
+      user: member.user,
+      organization: member.organization,
+    };
   }
 }

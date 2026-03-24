@@ -4,6 +4,7 @@ import {
   IsOptional,
   MinLength,
   MaxLength,
+  IsNumber,
 } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -129,6 +130,16 @@ export class CreateEmergencyContactDto {
   @IsString()
   @MaxLength(100)
   relationship?: string;
+}
+
+export class UpdateLocationDto {
+  @ApiProperty({ example: 14.5995 })
+  @IsNumber()
+  latitude: number;
+
+  @ApiProperty({ example: 120.9842 })
+  @IsNumber()
+  longitude: number;
 }
 
 export class UpdateUserRolesDto {

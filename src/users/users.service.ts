@@ -14,6 +14,7 @@ import {
   EmergencyContact,
   UserRole,
   RoleResponse,
+  UserOrganizationMembership,
 } from './types/user.types';
 import { OrganizationResponse } from '../organizations/types/organization.types';
 import {
@@ -76,12 +77,12 @@ export class UsersService {
     }
   }
 
-  private async enrichUserWithRoles(user: any): Promise<User> {
+  private async enrichUserWithRoles(user: User): Promise<User> {
     const roles = await this.getUserRoles(user.id);
     return { ...user, roles } as User;
   }
 
-  private async enrichUserWithAll(user: any): Promise<User> {
+  private async enrichUserWithAll(user: User): Promise<User> {
     const roles = await this.getUserRoles(user.id);
     const emergency_contacts = await this.getEmergencyContacts(user.id);
     const organizations = await this.getUserOrganizations(user.id);
@@ -90,38 +91,19 @@ export class UsersService {
 
   private async getUserOrganizations(
     userId: string,
-  ): Promise<OrganizationResponse[]> {
+  ): Promise<UserOrganizationMembership[]> {
     const { data, error } = await this.supabase.client
-      .from('user_organizations')
+      .from('organization_members')
       .select(
-        'organization_id, organizations:organizations(id,name,short_name,code,type,level,region,province,city,barangay,address,phone,website,is_active,created_at)',
+        'id,organization_id,org_type,org_role,responder_type,status,responder_status,is_available,location,created_at,organization:organizations(id,name,short_name,code,type,level,parent_organization_id,region,province,city,barangay,is_active)',
       )
-      .eq('citizen_id', userId)
-      .eq('is_active', true);
+      .eq('user_id', userId);
 
     if (error || !data) {
       return [];
     }
 
-    return data
-      .map((item: any) => ({
-        id: item.organizations?.id,
-        name: item.organizations?.name,
-        short_name: item.organizations?.short_name,
-        code: item.organizations?.code,
-        type: item.organizations?.type,
-        level: item.organizations?.level,
-        region: item.organizations?.region,
-        province: item.organizations?.province,
-        city: item.organizations?.city,
-        barangay: item.organizations?.barangay,
-        address: item.organizations?.address,
-        phone: item.organizations?.phone,
-        website: item.organizations?.website,
-        is_active: item.organizations?.is_active,
-        created_at: item.organizations?.created_at,
-      }))
-      .filter((org: OrganizationResponse) => org.id);
+    return data as UserOrganizationMembership[];
   }
 
   private async enrichUsersWithRoles(users: any[]): Promise<User[]> {
@@ -371,6 +353,36 @@ export class UsersService {
 
     if (error) {
       throw new Error(error.message);
+    }
+  }
+
+  async updateMemberLocation(
+    userId: string,
+    latitude: number,
+    longitude: number,
+  ): Promise<void> {
+    const { data: membership, error: checkError } = await this.supabase.client
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', userId)
+      .in('status', ['INVITED', 'ACTIVE'])
+      .single();
+
+    if (checkError || !membership) {
+      throw new NotFoundException('Organization membership not found');
+    }
+
+    const { error } = await this.supabase.client
+      .from('organization_members')
+      .update({
+        location: `SRID=4326;POINT(${longitude} ${latitude})`,
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new BadRequestException(
+        `Failed to update location: ${error.message}`,
+      );
     }
   }
 

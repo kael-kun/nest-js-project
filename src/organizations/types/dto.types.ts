@@ -4,6 +4,9 @@ import {
   IsEnum,
   IsBoolean,
   MaxLength,
+  IsArray,
+  IsUUID,
+  IsEmail,
 } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
@@ -28,16 +31,32 @@ export enum OrganizationLevel {
   BARANGAY = 'BARANGAY',
 }
 
+export enum OrgMemberRole {
+  RESPONDER = 'RESPONDER',
+  DISPATCHER = 'DISPATCHER',
+  ORG_ADMIN = 'ORG_ADMIN',
+}
+
+export enum OrgMemberStatus {
+  INVITED = 'INVITED',
+  ACTIVE = 'ACTIVE',
+  DECLINED = 'DECLINED',
+  SUSPENDED = 'SUSPENDED',
+}
+
+export enum ResponderStatus {
+  AVAILABLE = 'AVAILABLE',
+  EN_ROUTE = 'EN_ROUTE',
+  ON_SCENE = 'ON_SCENE',
+  OFF_DUTY = 'OFF_DUTY',
+  BUSY = 'BUSY',
+}
+
 function emptyToUndefined() {
   return Transform(({ value }) => (value === '' ? undefined : value));
 }
 
 export class CreateOrganizationDto {
-  // user id
-  @ApiProperty({ example: 'CITIZEN202603180123' })
-  @IsString()
-  citizen_id: string;
-
   @ApiProperty({ example: 'National Police' })
   @IsString()
   @MaxLength(255)
@@ -61,6 +80,31 @@ export class CreateOrganizationDto {
   @ApiProperty({ enum: OrganizationLevel, example: 'NATIONAL' })
   @IsEnum(OrganizationLevel)
   level: OrganizationLevel;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  parent_organization_id?: string;
+
+  @ApiProperty({
+    required: false,
+    example: ['RESPONDER', 'DISPATCHER'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowed_roles?: string[];
+
+  @ApiProperty({
+    required: false,
+    example: ['PATROL_OFFICER', 'DETECTIVE'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowed_responder_types?: string[];
 
   @ApiProperty({ required: false, example: 'NCR' })
   @IsOptional()
@@ -108,6 +152,48 @@ export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+}
+
+export class InviteMemberDto {
+  @ApiProperty({ example: 'user-uuid' })
+  @IsUUID()
+  user_id: string;
+
+  @ApiProperty({ enum: OrgMemberRole, example: 'RESPONDER' })
+  @IsEnum(OrgMemberRole)
+  org_role: OrgMemberRole;
+
+  @ApiProperty({
+    required: false,
+    example: 'PATROL_OFFICER',
+  })
+  @IsOptional()
+  @IsString()
+  responder_type?: string;
+}
+
+export class UpdateMemberDto {
+  @ApiProperty({ enum: OrgMemberStatus, example: 'ACTIVE' })
+  @IsOptional()
+  @IsEnum(OrgMemberStatus)
+  status?: OrgMemberStatus;
+
+  @ApiProperty({ required: false, example: 'Violation of policies' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class AcceptInviteDto {
+  @ApiProperty({ enum: OrgMemberStatus, example: 'ACTIVE' })
+  @IsEnum(OrgMemberStatus)
+  status: OrgMemberStatus;
+}
+
+export class SuspendMemberDto {
+  @ApiProperty({ example: 'Violation of policies' })
+  @IsString()
+  reason: string;
 }
 
 export class AssignUserToOrganizationDto {

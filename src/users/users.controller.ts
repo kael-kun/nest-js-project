@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -24,6 +25,7 @@ import {
   CreateUserDto,
   UpdateUserDto,
   CreateEmergencyContactDto,
+  UpdateLocationDto,
 } from './types/dto.types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OwnershipGuard } from '../auth/guards/ownership.guard';
@@ -136,5 +138,23 @@ export class UsersController {
     @Param('contactId') contactId: string,
   ) {
     return this.usersService.removeEmergencyContact(contactId, userId);
+  }
+
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
+  @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
+  @Patch(':id/location')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update member location' })
+  @ApiResponse({ status: 200, description: 'Location updated successfully' })
+  async updateMemberLocation(
+    @Param('id') userId: string,
+    @Body() dto: UpdateLocationDto,
+  ) {
+    await this.usersService.updateMemberLocation(
+      userId,
+      dto.latitude,
+      dto.longitude,
+    );
+    return { message: 'Location updated successfully' };
   }
 }
