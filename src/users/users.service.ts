@@ -12,17 +12,15 @@ import {
   UserResponse,
   UserListResponse,
   EmergencyContact,
-  UserRole,
   RoleResponse,
   UserOrganizationMembership,
 } from './types/user.types';
-import { OrganizationResponse } from '../organizations/types/organization.types';
 import {
   CreateUserDto,
   UpdateUserDto,
   CreateEmergencyContactDto,
 } from './types/dto.types';
-
+import { randomUUID } from 'crypto';
 const USER_FIELDS =
   'id,phone,email,password_hash,first_name,last_name,profile_image_url,is_verified,is_active,last_login_at,created_at,updated_at';
 
@@ -77,11 +75,6 @@ export class UsersService {
     }
   }
 
-  private async enrichUserWithRoles(user: User): Promise<User> {
-    const roles = await this.getUserRoles(user.id);
-    return { ...user, roles } as User;
-  }
-
   private async enrichUserWithAll(user: User): Promise<User> {
     const roles = await this.getUserRoles(user.id);
     const emergency_contacts = await this.getEmergencyContacts(user.id);
@@ -104,12 +97,6 @@ export class UsersService {
     }
 
     return data as UserOrganizationMembership[];
-  }
-
-  private async enrichUsersWithRoles(users: any[]): Promise<User[]> {
-    return Promise.all(
-      users.map(async (user) => this.enrichUserWithRoles(user)),
-    );
   }
 
   private async enrichUsersWithAll(users: any[]): Promise<User[]> {
@@ -152,6 +139,7 @@ export class UsersService {
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
+    const citizen_id = this.generateCitizenId();
 
     const password_hash = await bcrypt.hash(createUserDto.password, 10);
 
@@ -164,6 +152,7 @@ export class UsersService {
     const { data, error } = await this.supabase.client
       .from('users')
       .insert({
+        citizen_id: citizen_id,
         phone: createUserDto.phone,
         email: createUserDto.email,
         password_hash,
@@ -186,6 +175,21 @@ export class UsersService {
 
     return this.toUserResponse(user);
   }
+
+  generateCitizenId = () => {
+    const base = 'CITIZEN';
+
+    const now = new Date();
+
+    const datePart =
+      now.getFullYear().toString() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0');
+
+    const randomPart = Math.floor(1000 + Math.random() * 9000);
+
+    return `${base}${datePart}${randomPart}`;
+  };
 
   async update(
     id: string,

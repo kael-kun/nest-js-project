@@ -34,7 +34,6 @@ import { FileValidationPipe } from '../r2_bucket/pipes/file-validation.pipe';
 
 @ApiTags('users')
 @Controller('users')
-@UseGuards(JwtAuthGuard, OwnershipGuard)
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -52,7 +51,7 @@ export class UsersController {
   ) {
     return this.usersService.create(createUserDto, file);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN')
   @Get()
   @ApiOperation({ summary: 'Get all users (admin only)' })
@@ -63,7 +62,7 @@ export class UsersController {
   ) {
     return this.usersService.findAll(page, limit);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'OWNER')
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID (admin only)' })
@@ -76,7 +75,7 @@ export class UsersController {
     const { password_hash, ...response } = user;
     return response;
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'OWNER')
   @Put(':id')
   @UseInterceptors(FileInterceptor('file'))
@@ -90,7 +89,7 @@ export class UsersController {
   ) {
     return this.usersService.update(id, updateUserDto, file);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN')
   @Delete(':id')
   @ApiOperation({ summary: 'Deactivate user account (admin only)' })
@@ -98,7 +97,7 @@ export class UsersController {
   async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Get(':id/emergency-contacts')
   @ApiOperation({ summary: 'Get emergency contacts for a user' })
@@ -106,7 +105,7 @@ export class UsersController {
   async getEmergencyContacts(@Param('id') userId: string) {
     return this.usersService.getEmergencyContacts(userId);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Post(':id/emergency-contacts')
   @ApiOperation({ summary: 'Add emergency contact' })
@@ -117,7 +116,7 @@ export class UsersController {
   ) {
     return this.usersService.addEmergencyContact(userId, dto);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Delete(':id/emergency-contacts/:contactId')
   @ApiOperation({ summary: 'Remove emergency contact' })
@@ -128,7 +127,7 @@ export class UsersController {
   ) {
     return this.usersService.removeEmergencyContact(contactId, userId);
   }
-
+  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Patch(':id/location')
   @ApiOperation({ summary: 'Update member location' })
