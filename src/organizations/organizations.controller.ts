@@ -59,11 +59,8 @@ export class OrganizationsController {
     description: 'Organization created successfully',
   })
   @ApiResponse({ status: 409, description: 'Organization code already exists' })
-  async create(
-    @Body() createOrganizationDto: CreateOrganizationDto,
-    @CurrentUserId() userId: string,
-  ) {
-    return this.organizationsService.create(createOrganizationDto, userId);
+  async create(@Body() createOrganizationDto: CreateOrganizationDto) {
+    return this.organizationsService.create(createOrganizationDto);
   }
 
   @Put(':id')
@@ -121,6 +118,8 @@ export class OrganizationsController {
       inviteDto.user_id,
       inviteDto.org_role,
       inviteDto.responder_type,
+      inviteDto.preferred_km,
+      inviteDto.responder_details,
     );
   }
 

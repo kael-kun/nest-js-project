@@ -97,6 +97,8 @@ export interface UserOrganizationMembership {
   responder_status?: ResponderStatus;
   is_available?: boolean;
   location?: { type: string; coordinates: [number, number] };
+  preferred_km?: number;
+  responder_details?: { title: string; description: string }[];
   created_at: string;
   organization: {
     id: string;

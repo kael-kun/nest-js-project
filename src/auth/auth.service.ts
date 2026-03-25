@@ -25,7 +25,7 @@ export class AuthService {
 
     const refreshToken = randomUUID();
     const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
+    refreshTokenExpiry.setUTCDate(refreshTokenExpiry.getUTCDate() + 7);
 
     await this.sessionsService.create({
       user_id: user.id,
@@ -41,10 +41,13 @@ export class AuthService {
 
     await this.usersService.updateLastLogin(user.id);
 
+    const ACCESS_TOKEN_EXPIRY = 900;
+    const accessTokenExpiry = new Date(Date.now() + ACCESS_TOKEN_EXPIRY * 1000);
+
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
-      expires_in: 900,
+      expires_in: accessTokenExpiry.toISOString(),
       user: {
         id: user.id,
         email: user.email,

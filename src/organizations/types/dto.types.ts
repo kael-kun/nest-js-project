@@ -7,7 +7,11 @@ import {
   IsArray,
   IsUUID,
   IsEmail,
+  IsInt,
+  Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -52,10 +56,6 @@ export enum ResponderStatus {
   BUSY = 'BUSY',
 }
 
-function emptyToUndefined() {
-  return Transform(({ value }) => (value === '' ? undefined : value));
-}
-
 export class CreateOrganizationDto {
   @ApiProperty({ example: 'National Police' })
   @IsString()
@@ -80,11 +80,6 @@ export class CreateOrganizationDto {
   @ApiProperty({ enum: OrganizationLevel, example: 'NATIONAL' })
   @IsEnum(OrganizationLevel)
   level: OrganizationLevel;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsUUID()
-  parent_organization_id?: string;
 
   @ApiProperty({
     required: false,
@@ -154,6 +149,16 @@ export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {
   is_active?: boolean;
 }
 
+export class ResponderDetailDto {
+  @ApiProperty({ example: 'Badge Number' })
+  @IsString()
+  title: string;
+
+  @ApiProperty({ example: 'PNP-12345' })
+  @IsString()
+  description: string;
+}
+
 export class InviteMemberDto {
   @ApiProperty({ example: 'user-uuid' })
   @IsUUID()
@@ -170,6 +175,26 @@ export class InviteMemberDto {
   @IsOptional()
   @IsString()
   responder_type?: string;
+
+  @ApiProperty({ required: false, example: 10 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  preferred_km?: number;
+
+  @ApiProperty({
+    required: false,
+    example: [
+      { title: 'Badge Number', description: 'PNP-12345' },
+      { title: 'Rank', description: 'Sergeant' },
+    ],
+    type: [ResponderDetailDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ResponderDetailDto)
+  responder_details?: ResponderDetailDto[];
 }
 
 export class UpdateMemberDto {
@@ -182,6 +207,26 @@ export class UpdateMemberDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @ApiProperty({ required: false, example: 15 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  preferred_km?: number;
+
+  @ApiProperty({
+    required: false,
+    example: [
+      { title: 'Badge Number', description: 'PNP-12345' },
+      { title: 'Rank', description: 'Sergeant' },
+    ],
+    type: [ResponderDetailDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ResponderDetailDto)
+  responder_details?: ResponderDetailDto[];
 }
 
 export class AcceptInviteDto {

@@ -73,6 +73,8 @@ export interface OrganizationMember {
   invited_by?: string;
   reason?: string;
   location?: { type: string; coordinates: [number, number] };
+  preferred_km?: number;
+  responder_details?: { title: string; description: string }[];
   created_at: string;
   updated_at: string;
   user?: {
@@ -103,6 +105,8 @@ export interface OrganizationMemberResponse {
   invited_by?: string;
   reason?: string;
   location?: { type: string; coordinates: [number, number] };
+  preferred_km?: number;
+  responder_details?: { title: string; description: string }[];
   created_at: string;
   user?: {
     id: string;

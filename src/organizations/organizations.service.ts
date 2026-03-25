@@ -29,7 +29,7 @@ const ORGANIZATION_FIELDS =
   'id,name,short_name,code,type,level,parent_organization_id,allowed_roles,allowed_responder_types,region,province,city,barangay,address,phone,website,is_active,created_at,updated_at';
 
 const MEMBER_FIELDS =
-  'id,user_id,organization_id,org_type,org_role,responder_type,status,responder_status,is_available,invited_by,reason,location,created_at,updated_at';
+  'id,user_id,organization_id,org_type,org_role,responder_type,status,responder_status,is_available,invited_by,reason,location,preferred_km,responder_details,created_at,updated_at';
 
 @Injectable()
 export class OrganizationsService {
@@ -115,7 +115,6 @@ export class OrganizationsService {
 
   async create(
     createOrganizationDto: CreateOrganizationDto,
-    creatorUserId: string,
   ): Promise<OrganizationResponse> {
     const existing = await this.findByCode(createOrganizationDto.code);
     if (existing) {
@@ -132,7 +131,6 @@ export class OrganizationsService {
         code: createOrganizationDto.code,
         type: createOrganizationDto.type,
         level: createOrganizationDto.level,
-        parent_organization_id: createOrganizationDto.parent_organization_id,
         allowed_roles: createOrganizationDto.allowed_roles || defaultRoles,
         allowed_responder_types:
           createOrganizationDto.allowed_responder_types || [],
@@ -184,9 +182,6 @@ export class OrganizationsService {
         code: updateOrganizationDto.code ?? existing.code,
         type: updateOrganizationDto.type ?? existing.type,
         level: updateOrganizationDto.level ?? existing.level,
-        parent_organization_id:
-          updateOrganizationDto.parent_organization_id ??
-          existing.parent_organization_id,
         allowed_roles:
           updateOrganizationDto.allowed_roles ?? existing.allowed_roles,
         allowed_responder_types:
@@ -231,6 +226,8 @@ export class OrganizationsService {
     userId: string,
     orgRole: OrgMemberRole,
     responderType?: string,
+    preferredKm?: number,
+    responderDetails?: { title: string; description: string }[],
   ): Promise<OrganizationMemberResponse> {
     const org = await this.findById(organizationId);
 
@@ -274,6 +271,8 @@ export class OrganizationsService {
         org_role: orgRole,
         responder_type: responderType,
         status: OrgMemberStatus.INVITED,
+        preferred_km: preferredKm ?? 0,
+        responder_details: responderDetails ?? [],
       })
       .select(
         `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
@@ -386,10 +385,41 @@ export class OrganizationsService {
     memberId: string,
     updateDto: UpdateMemberDto,
   ): Promise<OrganizationMemberResponse> {
+    const updates: any = {
+      updated_at: new Date().toISOString(),
+    };
+
     if (updateDto.status === 'SUSPENDED' && updateDto.reason) {
-      return this.suspendMember(memberId, updateDto.reason);
+      updates.status = OrgMemberStatus.SUSPENDED;
+      updates.reason = updateDto.reason;
+    } else if (updateDto.status) {
+      updates.status = updateDto.status;
     }
-    throw new BadRequestException('Invalid update operation');
+
+    if (updateDto.preferred_km !== undefined) {
+      updates.preferred_km = updateDto.preferred_km;
+    }
+
+    if (updateDto.responder_details !== undefined) {
+      updates.responder_details = updateDto.responder_details;
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('organization_members')
+      .update(updates)
+      .eq('id', memberId)
+      .select(
+        `${MEMBER_FIELDS},user:user_id(id,first_name,last_name,email,phone),organization:organization_id(id,name,short_name,code)`,
+      )
+      .single<OrganizationMember | null>();
+
+    if (error || !data) {
+      throw new BadRequestException(
+        error?.message || 'Failed to update member',
+      );
+    }
+
+    return this.toMemberResponse(data);
   }
 
   async removeMember(memberId: string): Promise<void> {
@@ -564,6 +594,8 @@ export class OrganizationsService {
       invited_by: member.invited_by,
       reason: member.reason,
       location: member.location,
+      preferred_km: member.preferred_km,
+      responder_details: member.responder_details,
       created_at: member.created_at,
       user: member.user,
       organization: member.organization,

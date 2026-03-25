@@ -23,6 +23,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 @ApiTags('user-roles')
 @Controller('user-roles')
 @UseGuards(JwtAuthGuard, OwnershipGuard)
+@ApiBearerAuth()
 export class UserRolesController {
   constructor(
     private readonly userRolesService: UserRolesService,
@@ -31,7 +32,6 @@ export class UserRolesController {
 
   @Post()
   @Roles('ADMIN')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a role to a user' })
   @ApiResponse({ status: 201, description: 'Role added successfully' })
   @ApiResponse({
@@ -44,7 +44,6 @@ export class UserRolesController {
 
   @Put('roles/:userRoleId')
   @Roles('ADMIN')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user role by user role id' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   async updateUserRole(
@@ -57,7 +56,6 @@ export class UserRolesController {
 
   @Delete('roles/:userRoleId')
   @Roles('ADMIN')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove a role from a user' })
   @ApiResponse({ status: 200, description: 'Role removed successfully' })
   async removeRole(@Param('userRoleId') userRoleId: string) {

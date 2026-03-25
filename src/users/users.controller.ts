@@ -34,10 +34,13 @@ import { FileValidationPipe } from '../r2_bucket/pipes/file-validation.pipe';
 
 @ApiTags('users')
 @Controller('users')
+@UseGuards(JwtAuthGuard, OwnershipGuard)
+@ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @UseGuards()
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Register a new user' })
@@ -50,10 +53,8 @@ export class UsersController {
     return this.usersService.create(createUserDto, file);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN')
   @Get()
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users (admin only)' })
   @ApiResponse({ status: 200, description: 'List of users' })
   async findAll(
@@ -63,10 +64,8 @@ export class UsersController {
     return this.usersService.findAll(page, limit);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'OWNER')
   @Get(':id')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID (admin only)' })
   @ApiResponse({ status: 200, description: 'User profile' })
   async findById(@Param('id') id: string) {
@@ -78,12 +77,10 @@ export class UsersController {
     return response;
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'OWNER')
   @Put(':id')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user profile' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   async update(
@@ -94,30 +91,24 @@ export class UsersController {
     return this.usersService.update(id, updateUserDto, file);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN')
   @Delete(':id')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Deactivate user account (admin only)' })
   @ApiResponse({ status: 200, description: 'User deactivated successfully' })
   async remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Get(':id/emergency-contacts')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get emergency contacts for a user' })
   @ApiResponse({ status: 200, description: 'List of emergency contacts' })
   async getEmergencyContacts(@Param('id') userId: string) {
     return this.usersService.getEmergencyContacts(userId);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Post(':id/emergency-contacts')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Add emergency contact' })
   @ApiResponse({ status: 201, description: 'Emergency contact added' })
   async addEmergencyContact(
@@ -127,10 +118,8 @@ export class UsersController {
     return this.usersService.addEmergencyContact(userId, dto);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Delete(':id/emergency-contacts/:contactId')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove emergency contact' })
   @ApiResponse({ status: 200, description: 'Emergency contact removed' })
   async removeEmergencyContact(
@@ -140,10 +129,8 @@ export class UsersController {
     return this.usersService.removeEmergencyContact(contactId, userId);
   }
 
-  @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'OWNER')
   @Patch(':id/location')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update member location' })
   @ApiResponse({ status: 200, description: 'Location updated successfully' })
   async updateMemberLocation(
