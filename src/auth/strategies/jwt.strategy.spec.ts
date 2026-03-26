@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '../../users/types/user.types';
+import { UsersService } from '../../users/users.service';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -15,6 +16,17 @@ describe('JwtStrategy', () => {
           provide: ConfigService,
           useValue: {
             getOrThrow: jest.fn().mockReturnValue('test-secret'),
+          },
+        },
+        {
+          provide: UsersService,
+          useValue: {
+            findById: jest.fn().mockResolvedValue({
+              id: 'user-uuid-123',
+              email: 'test@example.com',
+              is_active: true,
+              roles: [{ name: 'CITIZEN' }, { name: 'ADMIN' }],
+            }),
           },
         },
       ],
@@ -44,7 +56,7 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('should return empty roles array when roles are not provided in payload', async () => {
+    it('should return roles from database when payload has different roles', async () => {
       const payload = {
         sub: 'user-uuid-123',
         username: 'test@example.com',
@@ -56,7 +68,7 @@ describe('JwtStrategy', () => {
       expect(result).toEqual({
         userId: 'user-uuid-123',
         username: 'test@example.com',
-        roles: [],
+        roles: ['CITIZEN', 'ADMIN'],
       });
     });
 

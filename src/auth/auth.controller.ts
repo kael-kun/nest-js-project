@@ -1,29 +1,42 @@
 import {
   Controller,
   Post,
-  Get,
   Body,
   HttpCode,
   HttpStatus,
   Req,
   Ip,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
+import {
+  LoginDto,
+  LoginResponseDto,
+  RefreshResponseDto,
+  LogoutResponseDto,
+} from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 type RequestWithIp = { ip: string; connection?: { remoteAddress?: string } };
 
 @ApiTags('auth')
-@Controller('auth')
+@Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user and return access tokens',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: LoginResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
     @Body() loginDto: LoginDto,
@@ -36,8 +49,15 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token' })
-  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description: 'Exchange refresh token for new access token',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token refreshed successfully',
+    type: RefreshResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refresh(refreshTokenDto);
@@ -45,8 +65,15 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User logout' })
-  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  @ApiOperation({
+    summary: 'User logout',
+    description: 'Revoke refresh token session',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Logged out successfully',
+    type: LogoutResponseDto,
+  })
   async logout(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.logout(refreshTokenDto);
   }

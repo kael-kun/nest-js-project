@@ -23,9 +23,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.is_active) {
+      throw new UnauthorizedException('Account is deactivated');
+    }
+
+    // Cap concurrent sessions — revoke oldest if at limit
+    await this.sessionsService.revokeOldestIfOverLimit(user.id);
+
     const refreshToken = randomUUID();
     const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setUTCDate(refreshTokenExpiry.getUTCDate() + 7);
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
 
     await this.sessionsService.create({
       user_id: user.id,
@@ -35,19 +42,17 @@ export class AuthService {
     });
 
     const roleNames = user.roles.map((r) => r.name);
-
     const payload = { sub: user.id, username: user.email, roles: roleNames };
     const accessToken = this.jwtService.sign(payload);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    await this.usersService.updateLastLogin(user.id);
-
-    const ACCESS_TOKEN_EXPIRY = 900;
-    const accessTokenExpiry = new Date(Date.now() + ACCESS_TOKEN_EXPIRY * 1000);
+    // Fire-and-forget — don't block login on this
+    void this.usersService.updateLastLogin(user.id);
 
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
-      expires_in: accessTokenExpiry.toISOString(),
+      expires_at: expiresAt,
       user: {
         id: user.id,
         email: user.email,
@@ -75,10 +80,11 @@ export class AuthService {
     const roleNames = user.roles.map((r) => r.name);
     const payload = { sub: user.id, username: user.email, roles: roleNames };
     const accessToken = this.jwtService.sign(payload);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     return {
       access_token: accessToken,
-      expires_in: 900,
+      expires_at: expiresAt,
     };
   }
 

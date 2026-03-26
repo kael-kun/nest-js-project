@@ -9,7 +9,7 @@ describe('AuthController', () => {
   const mockLoginResponse = {
     access_token: 'access_token_mock',
     refresh_token: 'refresh_token_mock',
-    expires_in: 900,
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     user: {
       id: 'user-uuid-123',
       email: 'test@example.com',
@@ -21,7 +21,7 @@ describe('AuthController', () => {
 
   const mockRefreshResponse = {
     access_token: 'new_access_token_mock',
-    expires_in: 900,
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
   };
 
   beforeEach(async () => {

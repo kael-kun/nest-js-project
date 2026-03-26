@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
   Session,
@@ -26,7 +26,9 @@ export class SessionsService {
       .single();
 
     if (error || !data) {
-      throw new Error(error?.message || 'Failed to create session');
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to create session',
+      );
     }
 
     return data;
@@ -58,6 +60,8 @@ export class SessionsService {
     const expiresAt = new Date(session.expires_at);
 
     if (expiresAt < now) {
+      // Revoke expired session on detection rather than leaving it in DB
+      void this.revokeSession(session.id);
       return null;
     }
 
@@ -71,8 +75,30 @@ export class SessionsService {
       .eq('id', sessionId);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerErrorException(
+        `Failed to revoke session: ${error.message}`,
+      );
     }
+  }
+
+  async revokeOldestIfOverLimit(userId: string, limit = 3): Promise<void> {
+    const { data } = await this.supabase.client
+      .from('sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_revoked', false)
+      .order('created_at', { ascending: true });
+
+    if (!data || data.length < limit) return;
+
+    // Revoke oldest sessions so new login stays within limit
+    const toRevoke = data.slice(0, data.length - limit + 1);
+    const ids = toRevoke.map((s: { id: string }) => s.id);
+
+    await this.supabase.client
+      .from('sessions')
+      .update({ is_revoked: true, updated_at: new Date().toISOString() })
+      .in('id', ids);
   }
 
   async revokeAllUserSessions(userId: string): Promise<void> {
@@ -83,7 +109,9 @@ export class SessionsService {
       .eq('is_revoked', false);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerErrorException(
+        `Failed to revoke user sessions: ${error.message}`,
+      );
     }
   }
 }

@@ -1,13 +1,9 @@
 import {
-  OrganizationResponse,
   OrganizationType,
   OrganizationLevel,
-} from '../../organizations/types/organization.types';
-import {
-  OrgMemberRole,
   OrgMemberStatus,
-  ResponderStatus,
-} from '../../organizations/types/dto.types';
+} from '../../organizations/types/organization.types';
+import { OrgMemberRoleEnum } from '../../organizations/types/dto.types';
 
 export type UserRole =
   | 'CITIZEN'
@@ -91,15 +87,13 @@ export interface UserOrganizationMembership {
   id: string;
   organization_id: string;
   org_type: OrganizationType;
-  org_role: OrgMemberRole;
+  org_role: OrgMemberRoleEnum;
   responder_type?: string;
   status: OrgMemberStatus;
-  responder_status?: ResponderStatus;
-  is_available?: boolean;
-  location?: { type: string; coordinates: [number, number] };
-  preferred_km?: number;
-  responder_details?: { title: string; description: string }[];
+  invited_by?: string;
+  reason?: string;
   created_at: string;
+  updated_at: string;
   organization: {
     id: string;
     name: string;

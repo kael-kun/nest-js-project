@@ -88,7 +88,7 @@ export class UsersService {
     const { data, error } = await this.supabase.client
       .from('organization_members')
       .select(
-        'id,organization_id,org_type,org_role,responder_type,status,responder_status,is_available,location,preferred_km,responder_details,created_at,organization:organizations(id,name,short_name,code,type,level,parent_organization_id,region,province,city,barangay,is_active)',
+        'id,organization_id,org_type,org_role,responder_type,status,invited_by,reason,created_at,updated_at,organization:organizations(id,name,short_name,code,type,level,parent_organization_id,region,province,city,barangay,is_active)',
       )
       .eq('user_id', userId);
 
