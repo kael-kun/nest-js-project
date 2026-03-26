@@ -20,7 +20,7 @@ import {
 } from './types/dto.types';
 
 const INCIDENT_FIELDS =
-  'incident_id,type,priority,status,location,title,description,address,landmark,reporter_id,scene_commander_id,image_url,reported_at,dispatched_at,en_route_at,arrived_at,resolved_at,closed_at,is_silent,is_anonymous,is_verified,false_report_count,created_at,updated_at';
+  'incident_id,type,priority,status,location,title,description,address,landmark,reporter_id,acknowledge_at,scene_commander_id,image_url,reported_at,onscene_at,canceled_at,en_route_at,arrived_at,resolved_at,closed_at,is_silent,is_anonymous,is_verified,false_report_count,created_at,updated_at';
 
 @Injectable()
 export class IncidentsService {
@@ -245,6 +245,9 @@ export class IncidentsService {
 
     const now = new Date().toISOString();
     switch (updateDto.status) {
+      case IncidentStatus.ACKNOWLEDGED:
+        updates.acknowledged_at = existing.acknowledge_at || now;
+        break;
       case IncidentStatus.EN_ROUTE:
         updates.en_route_at = existing.en_route_at || now;
         break;
@@ -253,9 +256,15 @@ export class IncidentsService {
         break;
       case IncidentStatus.RESOLVED:
         updates.resolved_at = existing.resolved_at || now;
+        this.updateOrgMemberAvailable(incidentId, true);
+        break;
+      case IncidentStatus.CANCELLED:
+        updates.cancelled_at = existing.canceled_at || now;
+        this.updateOrgMemberAvailable(incidentId, true);
         break;
       case IncidentStatus.CLOSED:
         updates.closed_at = existing.closed_at || now;
+        this.updateOrgMemberAvailable(incidentId, true);
         break;
     }
 
@@ -277,6 +286,36 @@ export class IncidentsService {
     }
 
     return this.toResponse(data);
+  }
+
+  async updateOrgMemberAvailable(
+    incidentId: string,
+    isAvailable: boolean,
+  ): Promise<void> {
+    const { data, error } = await this.supabase.client
+      .from('incidents')
+      .select('scene_commander_id')
+      .eq('incident_id', incidentId)
+      .single<Incident | null>();
+
+    if (error || !data) {
+      throw new BadRequestException(
+        error?.message || 'Failed to update incident status',
+      );
+    }
+
+    const { error: memberError } = await this.supabase.client
+      .from('organization_members')
+      .update({
+        is_available: isAvailable,
+      })
+      .eq('user_id', data.scene_commander_id);
+
+    if (memberError) {
+      throw new BadRequestException(
+        memberError?.message || 'Failed to update org member availability',
+      );
+    }
   }
 
   async remove(incidentId: string): Promise<void> {
@@ -441,7 +480,7 @@ export class IncidentsService {
       scene_commander_id: incident.scene_commander_id,
       image_url: incident.image_url,
       reported_at: incident.reported_at,
-      dispatched_at: incident.dispatched_at,
+      onscene_at: incident.onscene_at,
       en_route_at: incident.en_route_at,
       arrived_at: incident.arrived_at,
       resolved_at: incident.resolved_at,
@@ -522,7 +561,10 @@ export class IncidentsService {
       scene_commander_org_member: sceneCommanderOrgMember,
       image_url: incident.image_url,
       reported_at: incident.reported_at,
-      dispatched_at: incident.dispatched_at,
+      onscene_at: incident.onscene_at,
+      acknowledge_at: incident.acknowledge_at,
+      false_report_at: incident.false_report_at,
+      canceled_at: incident.canceled_at,
       en_route_at: incident.en_route_at,
       arrived_at: incident.arrived_at,
       resolved_at: incident.resolved_at,

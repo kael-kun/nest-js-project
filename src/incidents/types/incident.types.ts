@@ -16,10 +16,12 @@ export interface Incident {
   scene_commander_id?: string;
   image_url?: string;
   reported_at: string;
-  dispatched_at?: string;
+  canceled_at?: string;
   en_route_at?: string;
+  false_report_at?: string;
   arrived_at?: string;
   resolved_at?: string;
+  onscene_at?: string;
   closed_at?: string;
   is_silent: boolean;
   is_anonymous: boolean;
@@ -80,8 +82,11 @@ export interface IncidentResponse {
   scene_commander_org_member?: SceneCommanderOrgMember;
   image_url?: string;
   reported_at: string;
-  dispatched_at?: string;
+  acknowledge_at?: string;
+  false_report_at?: string;
+  canceled_at?: string;
   en_route_at?: string;
+  onscene_at?: string;
   arrived_at?: string;
   resolved_at?: string;
   closed_at?: string;
