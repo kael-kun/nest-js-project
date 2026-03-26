@@ -39,6 +39,37 @@ import { FileValidationPipe } from '../r2_bucket/pipes/file-validation.pipe';
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
+  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'ORG_ADMIN')
+  @Get('/reporter')
+  @ApiOperation({ summary: 'Get incidents by reporter' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of incidents reported by user',
+  })
+  async findByReporter(
+    @CurrentUserId() userId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.incidentsService.findByReporter(userId, page, limit);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/commander')
+  @ApiOperation({ summary: 'Get incidents by scene commander' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of incidents managed by user',
+  })
+  async findBySceneCommander(
+    @CurrentUserId() userId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.incidentsService.findBySceneCommander(userId, page, limit);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, OwnershipGuard)
   @Roles('CITIZEN')
@@ -112,36 +143,5 @@ export class IncidentsController {
   @ApiResponse({ status: 404, description: 'Incident not found' })
   async remove(@Param('id') id: string) {
     return this.incidentsService.remove(id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'ORG_ADMIN')
-  @Get('/me/reporter')
-  @ApiOperation({ summary: 'Get incidents by reporter' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of incidents reported by user',
-  })
-  async findByReporter(
-    @CurrentUserId() userId: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.incidentsService.findByReporter(userId, page, limit);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('/me/commander')
-  @ApiOperation({ summary: 'Get incidents by scene commander' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of incidents managed by user',
-  })
-  async findBySceneCommander(
-    @CurrentUserId() userId: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.incidentsService.findBySceneCommander(userId, page, limit);
   }
 }

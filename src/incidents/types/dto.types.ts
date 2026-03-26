@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsBoolean, IsUUID, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsBoolean,
+  IsUUID,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -39,16 +48,15 @@ export class CreateIncidentDto {
   @IsEnum(IncidentType)
   type: IncidentType;
 
-  @ApiProperty({ enum: PriorityLevel, example: 'MEDIUM' })
-  @IsEnum(PriorityLevel)
-  priority: PriorityLevel;
-
   @ApiProperty({ example: 'Car accident on Highway 1' })
   @IsString()
   @IsString()
   title: string;
 
-  @ApiProperty({ required: false, example: 'Two vehicles collided, one driver injured' })
+  @ApiProperty({
+    required: false,
+    example: 'Two vehicles collided, one driver injured',
+  })
   @IsOptional()
   @IsString()
   description?: string;

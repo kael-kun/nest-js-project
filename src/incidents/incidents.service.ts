@@ -75,7 +75,6 @@ export class IncidentsService {
       .insert({
         incident_id: incidentId,
         type: createIncidentDto.type,
-        priority: createIncidentDto.priority,
         status: IncidentStatus.RECEIVED,
         location,
         title: createIncidentDto.title,
@@ -193,8 +192,6 @@ export class IncidentsService {
       updates.title = updateIncidentDto.title;
     if (updateIncidentDto.description !== undefined)
       updates.description = updateIncidentDto.description;
-    if (updateIncidentDto.priority !== undefined)
-      updates.priority = updateIncidentDto.priority;
     if (updateIncidentDto.type !== undefined)
       updates.type = updateIncidentDto.type;
 
