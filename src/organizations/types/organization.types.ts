@@ -6,21 +6,41 @@ export type OrgMemberRole = 'RESPONDER' | 'DISPATCHER' | 'ORG_ADMIN';
 export type OrgMemberStatus = 'INVITED' | 'ACTIVE' | 'DECLINED' | 'SUSPENDED';
 export type ResponderType =
   // POLICE
-  | 'PATROL_OFFICER' | 'DETECTIVE' | 'SWAT' | 'K9_OFFICER' | 'TRAFFIC_OFFICER'
+  | 'PATROL_OFFICER'
+  | 'DETECTIVE'
+  | 'SWAT'
+  | 'K9_OFFICER'
+  | 'TRAFFIC_OFFICER'
   // FIRE
-  | 'FIREFIGHTER' | 'FIRE_INVESTIGATOR' | 'HAZMAT_SPECIALIST' | 'RESCUE_TECHNICIAN'
+  | 'FIREFIGHTER'
+  | 'FIRE_INVESTIGATOR'
+  | 'HAZMAT_SPECIALIST'
+  | 'RESCUE_TECHNICIAN'
   // AMBULANCE
-  | 'PARAMEDIC' | 'EMT' | 'NURSE' | 'DOCTOR'
+  | 'PARAMEDIC'
+  | 'EMT'
+  | 'NURSE'
+  | 'DOCTOR'
   // COAST_GUARD
-  | 'RESCUE_SWIMMER' | 'BOAT_OPERATOR' | 'AVIATION_RESCUE' | 'MARITIME_OFFICER'
+  | 'RESCUE_SWIMMER'
+  | 'BOAT_OPERATOR'
+  | 'AVIATION_RESCUE'
+  | 'MARITIME_OFFICER'
   // BARANGAY
-  | 'TANOD' | 'HEALTH_WORKER' | 'DISASTER_VOLUNTEER'
+  | 'TANOD'
+  | 'HEALTH_WORKER'
+  | 'DISASTER_VOLUNTEER'
   // LGU
-  | 'DISASTER_COORDINATOR' | 'RELIEF_COORDINATOR' | 'HEALTH_OFFICER'
+  | 'DISASTER_COORDINATOR'
+  | 'RELIEF_COORDINATOR'
+  | 'HEALTH_OFFICER'
   // OCD
-  | 'EMERGENCY_MANAGER' | 'LOGISTICS_OFFICER'
+  | 'EMERGENCY_MANAGER'
+  | 'LOGISTICS_OFFICER'
   // PRIVATE + cross-org
-  | 'SECURITY_OFFICER' | 'FIRST_AIDER' | 'SAFETY_OFFICER';
+  | 'SECURITY_OFFICER'
+  | 'FIRST_AIDER'
+  | 'SAFETY_OFFICER';
 
 export interface MembershipResponse {
   id: string;
@@ -89,6 +109,7 @@ export interface MemberWithUserResponse {
   responder_type: ResponderType | null;
   status: OrgMemberStatus;
   invited_by?: string;
+  kilometer_radius?: number;
   reason?: string;
   created_at: string;
   updated_at: string;

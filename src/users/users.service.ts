@@ -26,6 +26,7 @@ const USER_FIELDS =
 
 @Injectable()
 export class UsersService {
+  logger: any;
   constructor(
     private supabase: SupabaseService,
     private cloudflare: CloudflareService,
@@ -388,6 +389,55 @@ export class UsersService {
         `Failed to update location: ${error.message}`,
       );
     }
+  }
+
+  async search(
+    q: string,
+    orgId?: string,
+  ): Promise<
+    {
+      id: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone: string | null;
+      profile_image_url: string | null;
+      is_member: boolean | null;
+    }[]
+  > {
+    const term = q.trim();
+    if (!term) return [];
+
+    const { data, error } = await this.supabase.client
+      .from('users')
+      .select('id,first_name,last_name,email,phone,profile_image_url')
+      .eq('is_active', true)
+      .or(
+        `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`,
+      )
+      .order('first_name', { ascending: true })
+      .limit(20);
+
+    if (error || !data) {
+      this.logger.warn(`search: query failed — ${error?.message}`);
+      return [];
+    }
+
+    if (!orgId) {
+      return data.map((u) => ({ ...u, is_member: null }));
+    }
+
+    const userIds = data.map((u) => u.id);
+    const { data: memberships } = await this.supabase.client
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', orgId)
+      .in('status', ['INVITED', 'ACTIVE'])
+      .in('user_id', userIds);
+
+    const memberSet = new Set((memberships ?? []).map((m: any) => m.user_id));
+
+    return data.map((u) => ({ ...u, is_member: memberSet.has(u.id) }));
   }
 
   private toUserResponse(user: User): UserResponse {

@@ -413,8 +413,9 @@ export class OrganizationsService {
         responder_type: responderType,
         status: 'INVITED' as OrgMemberStatus,
         invited_by: invitedBy,
+        kilometer_radius: dto.kilometer_radius ?? null,
       })
-      .select('id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,created_at,updated_at')
+      .select('id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,kilometer_radius,created_at,updated_at')
       .single();
 
     if (error || !data) {

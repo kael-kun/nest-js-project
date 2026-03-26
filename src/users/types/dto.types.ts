@@ -147,3 +147,34 @@ export class UpdateUserRolesDto {
   @IsString()
   role_id: string;
 }
+
+export class UserSearchResultDto {
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  id: string;
+
+  @ApiProperty({ example: 'Juan' })
+  first_name: string;
+
+  @ApiProperty({ example: 'dela Cruz' })
+  last_name: string;
+
+  @ApiProperty({ example: 'juan@example.com' })
+  email: string;
+
+  @ApiProperty({ example: '+639171234567', nullable: true })
+  phone: string | null;
+
+  @ApiProperty({
+    example: 'https://cdn.example.com/profiles/juan.jpg',
+    nullable: true,
+  })
+  profile_image_url: string | null;
+
+  @ApiProperty({
+    example: false,
+    nullable: true,
+    description:
+      'Whether the user already has an INVITED or ACTIVE membership in the queried org. Null when org_id was not provided.',
+  })
+  is_member: boolean | null;
+}

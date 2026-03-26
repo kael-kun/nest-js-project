@@ -8,6 +8,7 @@ import {
   IsEmail,
   ArrayMinSize,
   ArrayUnique,
+  IsNumber,
   MaxLength,
   MinLength,
   ValidateNested,
@@ -36,55 +37,55 @@ export enum OrganizationLevel {
 }
 
 export enum OrgMemberRoleEnum {
-  RESPONDER  = 'RESPONDER',
+  RESPONDER = 'RESPONDER',
   DISPATCHER = 'DISPATCHER',
-  ORG_ADMIN  = 'ORG_ADMIN',
+  ORG_ADMIN = 'ORG_ADMIN',
 }
 
 export enum ResponderTypeEnum {
   // POLICE org
-  PATROL_OFFICER     = 'PATROL_OFFICER',
-  DETECTIVE          = 'DETECTIVE',
-  SWAT               = 'SWAT',
-  K9_OFFICER         = 'K9_OFFICER',
-  TRAFFIC_OFFICER    = 'TRAFFIC_OFFICER',
+  PATROL_OFFICER = 'PATROL_OFFICER',
+  DETECTIVE = 'DETECTIVE',
+  SWAT = 'SWAT',
+  K9_OFFICER = 'K9_OFFICER',
+  TRAFFIC_OFFICER = 'TRAFFIC_OFFICER',
   // FIRE org
-  FIREFIGHTER        = 'FIREFIGHTER',
-  FIRE_INVESTIGATOR  = 'FIRE_INVESTIGATOR',
-  HAZMAT_SPECIALIST  = 'HAZMAT_SPECIALIST',
-  RESCUE_TECHNICIAN  = 'RESCUE_TECHNICIAN',
+  FIREFIGHTER = 'FIREFIGHTER',
+  FIRE_INVESTIGATOR = 'FIRE_INVESTIGATOR',
+  HAZMAT_SPECIALIST = 'HAZMAT_SPECIALIST',
+  RESCUE_TECHNICIAN = 'RESCUE_TECHNICIAN',
   // AMBULANCE org
-  PARAMEDIC          = 'PARAMEDIC',
-  EMT                = 'EMT',
-  NURSE              = 'NURSE',
-  DOCTOR             = 'DOCTOR',
+  PARAMEDIC = 'PARAMEDIC',
+  EMT = 'EMT',
+  NURSE = 'NURSE',
+  DOCTOR = 'DOCTOR',
   // COAST_GUARD org
-  RESCUE_SWIMMER     = 'RESCUE_SWIMMER',
-  BOAT_OPERATOR      = 'BOAT_OPERATOR',
-  AVIATION_RESCUE    = 'AVIATION_RESCUE',
-  MARITIME_OFFICER   = 'MARITIME_OFFICER',
+  RESCUE_SWIMMER = 'RESCUE_SWIMMER',
+  BOAT_OPERATOR = 'BOAT_OPERATOR',
+  AVIATION_RESCUE = 'AVIATION_RESCUE',
+  MARITIME_OFFICER = 'MARITIME_OFFICER',
   // BARANGAY org
-  TANOD              = 'TANOD',
-  HEALTH_WORKER      = 'HEALTH_WORKER',
+  TANOD = 'TANOD',
+  HEALTH_WORKER = 'HEALTH_WORKER',
   DISASTER_VOLUNTEER = 'DISASTER_VOLUNTEER',
   // LGU org
   DISASTER_COORDINATOR = 'DISASTER_COORDINATOR',
-  RELIEF_COORDINATOR   = 'RELIEF_COORDINATOR',
-  HEALTH_OFFICER       = 'HEALTH_OFFICER',
+  RELIEF_COORDINATOR = 'RELIEF_COORDINATOR',
+  HEALTH_OFFICER = 'HEALTH_OFFICER',
   // OCD org (DISASTER_COORDINATOR shared with LGU)
-  EMERGENCY_MANAGER  = 'EMERGENCY_MANAGER',
-  LOGISTICS_OFFICER  = 'LOGISTICS_OFFICER',
+  EMERGENCY_MANAGER = 'EMERGENCY_MANAGER',
+  LOGISTICS_OFFICER = 'LOGISTICS_OFFICER',
   // PRIVATE org
-  SECURITY_OFFICER   = 'SECURITY_OFFICER',
-  FIRST_AIDER        = 'FIRST_AIDER',
-  SAFETY_OFFICER     = 'SAFETY_OFFICER',
+  SECURITY_OFFICER = 'SECURITY_OFFICER',
+  FIRST_AIDER = 'FIRST_AIDER',
+  SAFETY_OFFICER = 'SAFETY_OFFICER',
 }
-
 
 export class InitialOrgAdminDto {
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'UUID of an existing user to appoint as the first ORG_ADMIN. The user must be active.',
+    description:
+      'UUID of an existing user to appoint as the first ORG_ADMIN. The user must be active.',
   })
   @IsUUID()
   user_id: string;
@@ -158,7 +159,8 @@ export class CreateOrganizationDto {
   @ApiProperty({
     required: false,
     example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'UUID of the parent organization. Omit for top-level organizations.',
+    description:
+      'UUID of the parent organization. Omit for top-level organizations.',
   })
   @IsOptional()
   @IsUUID()
@@ -266,6 +268,11 @@ export class InviteMemberDto {
   @IsOptional()
   @IsEnum(ResponderTypeEnum)
   responder_type?: ResponderTypeEnum;
+
+  // for kilometer_radius
+  @ApiProperty({ nullable: true })
+  @IsNumber()
+  kilometer_radius: number;
 }
 
 export class RevokeMemberDto {
@@ -303,7 +310,10 @@ export class CreateDispatcherDto {
   @MaxLength(100)
   last_name: string;
 
-  @ApiProperty({ example: 'dispatcher@pnp.gov.ph', description: 'Login email for the dispatcher account' })
+  @ApiProperty({
+    example: 'dispatcher@pnp.gov.ph',
+    description: 'Login email for the dispatcher account',
+  })
   @IsEmail()
   email: string;
 
@@ -377,7 +387,8 @@ export class OrganizationDto {
     enum: ResponderTypeEnum,
     isArray: true,
     example: ['PATROL_OFFICER', 'DETECTIVE', 'TRAFFIC_OFFICER'],
-    description: 'Responder types this organization is permitted to assign — set by System Admin',
+    description:
+      'Responder types this organization is permitted to assign — set by System Admin',
   })
   allowed_responder_types: ResponderTypeEnum[];
 
@@ -394,7 +405,10 @@ export class OrganizationDto {
   @ApiProperty({ example: '2026-03-19T08:00:00.000Z' })
   created_at: string;
 
-  @ApiProperty({ example: 12, description: 'Number of ACTIVE members in this organization' })
+  @ApiProperty({
+    example: 12,
+    description: 'Number of ACTIVE members in this organization',
+  })
   member_count: number;
 }
 
@@ -445,7 +459,10 @@ export class MemberWithUserDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440002' })
   organization_id: string;
 
-  @ApiProperty({ enum: OrgMemberRoleEnum, example: OrgMemberRoleEnum.RESPONDER })
+  @ApiProperty({
+    enum: OrgMemberRoleEnum,
+    example: OrgMemberRoleEnum.RESPONDER,
+  })
   org_role: OrgMemberRoleEnum;
 
   @ApiProperty({ enum: OrganizationType, example: OrganizationType.POLICE })

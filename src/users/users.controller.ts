@@ -17,6 +17,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -26,6 +27,7 @@ import {
   UpdateUserDto,
   CreateEmergencyContactDto,
   UpdateLocationDto,
+  UserSearchResultDto,
 } from './types/dto.types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OwnershipGuard } from '../auth/guards/ownership.guard';
@@ -142,5 +144,37 @@ export class UsersController {
       dto.longitude,
     );
     return { message: 'Location updated successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Search users by name, email, or phone',
+    description:
+      'Case-insensitive partial match across first_name, last_name, email, and phone. ' +
+      'Returns up to 20 results with minimal profile info. ' +
+      'Intended for use when inviting members to an organization.',
+  })
+  @ApiQuery({
+    name: 'q',
+    required: true,
+    description: 'Search term',
+    example: 'juan',
+  })
+  @ApiQuery({
+    name: 'org_id',
+    required: false,
+    description:
+      'When provided, each result includes is_member indicating whether the user already has an INVITED or ACTIVE membership in this org.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Matching users',
+    type: [UserSearchResultDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async search(@Query('q') q: string = '', @Query('org_id') orgId?: string) {
+    return this.usersService.search(q, orgId);
   }
 }
