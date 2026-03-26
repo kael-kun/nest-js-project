@@ -81,6 +81,22 @@ export class CreateIncidentDto {
 
   @ApiProperty({
     required: false,
+    example: '123 Main Street, Quezon City',
+  })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({
+    required: false,
+    example: 'Near Mercury Drug Store',
+  })
+  @IsOptional()
+  @IsString()
+  landmark?: string;
+
+  @ApiProperty({
+    required: false,
     type: 'file',
     format: 'binary',
     description: 'Incident image file',

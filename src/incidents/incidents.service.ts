@@ -20,7 +20,7 @@ import {
 } from './types/dto.types';
 
 const INCIDENT_FIELDS =
-  'incident_id,type,priority,status,location,title,description,reporter_id,scene_commander_id,image_url,reported_at,dispatched_at,en_route_at,arrived_at,resolved_at,closed_at,is_silent,is_anonymous,is_verified,false_report_count,created_at,updated_at';
+  'incident_id,type,priority,status,location,title,description,address,landmark,reporter_id,scene_commander_id,image_url,reported_at,dispatched_at,en_route_at,arrived_at,resolved_at,closed_at,is_silent,is_anonymous,is_verified,false_report_count,created_at,updated_at';
 
 @Injectable()
 export class IncidentsService {
@@ -79,6 +79,8 @@ export class IncidentsService {
         location,
         title: createIncidentDto.title,
         description: createIncidentDto.description,
+        address: createIncidentDto.address ?? null,
+        landmark: createIncidentDto.landmark ?? null,
         reporter_id: reporterId,
         image_url: imageUrl,
         is_silent: createIncidentDto.is_silent ?? false,
@@ -209,6 +211,10 @@ export class IncidentsService {
       updates.is_silent = updateIncidentDto.is_silent;
     if (updateIncidentDto.is_anonymous !== undefined)
       updates.is_anonymous = updateIncidentDto.is_anonymous;
+    if (updateIncidentDto.address !== undefined)
+      updates.address = updateIncidentDto.address;
+    if (updateIncidentDto.landmark !== undefined)
+      updates.landmark = updateIncidentDto.landmark;
 
     const { data, error } = await this.supabase.client
       .from('incidents')
@@ -432,6 +438,8 @@ export class IncidentsService {
       location: this.parseLocation(incident.location) ?? undefined,
       title: incident.title,
       description: incident.description,
+      address: incident.address,
+      landmark: incident.landmark,
       reporter_id: incident.reporter_id,
       scene_commander_id: incident.scene_commander_id,
       image_url: incident.image_url,
@@ -508,6 +516,8 @@ export class IncidentsService {
       location: this.parseLocation(incident.location) ?? undefined,
       title: incident.title,
       description: incident.description,
+      address: incident.address,
+      landmark: incident.landmark,
       reporter_id: incident.reporter_id,
       reporter,
       scene_commander_id: incident.scene_commander_id,

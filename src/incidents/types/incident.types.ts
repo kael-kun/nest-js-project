@@ -10,6 +10,8 @@ export interface Incident {
   location: string;
   title: string;
   description?: string;
+  address?: string;
+  landmark?: string;
   reporter_id?: string;
   scene_commander_id?: string;
   image_url?: string;
@@ -69,6 +71,8 @@ export interface IncidentResponse {
   location?: { type: string; coordinates: [number, number] };
   title: string;
   description?: string;
+  address?: string;
+  landmark?: string;
   reporter_id?: string;
   reporter?: IncidentResponderInfo;
   scene_commander_id?: string;
