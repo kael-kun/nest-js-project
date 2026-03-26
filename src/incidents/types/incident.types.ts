@@ -2,6 +2,11 @@ import { IncidentType, IncidentStatus, PriorityLevel } from './dto.types';
 
 export type { IncidentType, IncidentStatus, PriorityLevel };
 
+export interface StatusLog {
+  status: IncidentStatus;
+  timestamp: string;
+}
+
 export interface Incident {
   incident_id: string;
   type: IncidentType;
@@ -82,13 +87,7 @@ export interface IncidentResponse {
   scene_commander_org_member?: SceneCommanderOrgMember;
   image_url?: string;
   reported_at: string;
-  accepted_at?: string;
-  onscene_at?: string;
-  canceled_at?: string;
-  en_route_at?: string;
-  arrived_at?: string;
-  false_report_at?: string;
-  resolved_at?: string;
+  status_logs?: StatusLog[];
   is_silent: boolean;
   is_anonymous: boolean;
   is_verified: boolean;

@@ -236,7 +236,16 @@ export class IncidentsService {
     incidentId: string,
     updateDto: UpdateIncidentStatusDto,
   ): Promise<IncidentResponse> {
-    const existing = await this.findById(incidentId);
+    // Fetch raw incident data to get timestamp fields
+    const { data: existing, error: fetchError } = await this.supabase.client
+      .from('incidents')
+      .select(INCIDENT_FIELDS)
+      .eq('incident_id', incidentId)
+      .single<any>();
+
+    if (fetchError || !existing) {
+      throw new NotFoundException('Incident not found');
+    }
 
     const updates: any = {
       status: updateDto.status,
@@ -479,13 +488,7 @@ export class IncidentsService {
       scene_commander_id: incident.scene_commander_id,
       image_url: incident.image_url,
       reported_at: incident.reported_at,
-      accepted_at: incident.accepted_at,
-      onscene_at: incident.onscene_at,
-      canceled_at: incident.canceled_at,
-      en_route_at: incident.en_route_at,
-      arrived_at: incident.arrived_at,
-      false_report_at: incident.false_report_at,
-      resolved_at: incident.resolved_at,
+      status_logs: this.buildStatusLogs(incident),
       is_silent: incident.is_silent,
       is_anonymous: incident.is_anonymous,
       is_verified: incident.is_verified,
@@ -562,18 +565,53 @@ export class IncidentsService {
       scene_commander_org_member: sceneCommanderOrgMember,
       image_url: incident.image_url,
       reported_at: incident.reported_at,
-      accepted_at: incident.accepted_at,
-      onscene_at: incident.onscene_at,
-      canceled_at: incident.canceled_at,
-      en_route_at: incident.en_route_at,
-      arrived_at: incident.arrived_at,
-      false_report_at: incident.false_report_at,
-      resolved_at: incident.resolved_at,
+      status_logs: this.buildStatusLogs(incident),
       is_silent: incident.is_silent,
       is_anonymous: incident.is_anonymous,
       is_verified: incident.is_verified,
       false_report_count: incident.false_report_count,
       created_at: incident.created_at,
     };
+  }
+
+  private buildStatusLogs(incident: any): { status: IncidentStatus; timestamp: string }[] {
+    const logs: { status: IncidentStatus; timestamp: string }[] = [];
+
+    // WAITING_FOR_RESPONSE - always exists when incident exists
+    if (incident.reported_at) {
+      logs.push({ status: IncidentStatus.WAITING_FOR_RESPONSE, timestamp: incident.reported_at });
+    }
+
+    // ACCEPTED
+    if (incident.accepted_at) {
+      logs.push({ status: IncidentStatus.ACCEPTED, timestamp: incident.accepted_at });
+    }
+
+    // EN_ROUTE
+    if (incident.en_route_at) {
+      logs.push({ status: IncidentStatus.EN_ROUTE, timestamp: incident.en_route_at });
+    }
+
+    // ON_SCENE (maps to arrived_at in DB)
+    if (incident.arrived_at) {
+      logs.push({ status: IncidentStatus.ON_SCENE, timestamp: incident.arrived_at });
+    }
+
+    // CANCELLED
+    if (incident.canceled_at) {
+      logs.push({ status: IncidentStatus.CANCELLED, timestamp: incident.canceled_at });
+    }
+
+    // FALSE_REPORT
+    if (incident.false_report_at) {
+      logs.push({ status: IncidentStatus.FALSE_REPORT, timestamp: incident.false_report_at });
+    }
+
+    // RESOLVED
+    if (incident.resolved_at) {
+      logs.push({ status: IncidentStatus.RESOLVED, timestamp: incident.resolved_at });
+    }
+
+    return logs;
   }
 }
