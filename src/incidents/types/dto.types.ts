@@ -26,13 +26,12 @@ export enum IncidentType {
 
 export enum IncidentStatus {
   WAITING_FOR_RESPONSE = 'WAITING_FOR_RESPONSE',
-  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  ACCEPTED = 'ACCEPTED',
   EN_ROUTE = 'EN_ROUTE',
   ON_SCENE = 'ON_SCENE',
   RESOLVED = 'RESOLVED',
   CANCELLED = 'CANCELLED',
   FALSE_REPORT = 'FALSE_REPORT',
-  CLOSED = 'CLOSED',
 }
 
 export enum PriorityLevel {

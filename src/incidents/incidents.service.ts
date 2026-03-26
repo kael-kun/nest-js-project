@@ -20,7 +20,7 @@ import {
 } from './types/dto.types';
 
 const INCIDENT_FIELDS =
-  'incident_id,type,priority,status,location,title,description,address,landmark,reporter_id,acknowledge_at,scene_commander_id,image_url,reported_at,onscene_at,canceled_at,en_route_at,arrived_at,resolved_at,closed_at,is_silent,is_anonymous,is_verified,false_report_count,created_at,updated_at';
+  'incident_id,type,priority,status,location,title,description,address,landmark,reporter_id,scene_commander_id,image_url,reported_at,accepted_at,onscene_at,canceled_at,en_route_at,arrived_at,false_report_at,resolved_at,is_silent,is_anonymous,is_verified,false_report_count,created_at,updated_at';
 
 @Injectable()
 export class IncidentsService {
@@ -245,8 +245,8 @@ export class IncidentsService {
 
     const now = new Date().toISOString();
     switch (updateDto.status) {
-      case IncidentStatus.ACKNOWLEDGED:
-        updates.acknowledged_at = existing.acknowledge_at || now;
+      case IncidentStatus.ACCEPTED:
+        updates.accepted_at = existing.accepted_at || now;
         break;
       case IncidentStatus.EN_ROUTE:
         updates.en_route_at = existing.en_route_at || now;
@@ -259,12 +259,11 @@ export class IncidentsService {
         this.updateOrgMemberAvailable(incidentId, true);
         break;
       case IncidentStatus.CANCELLED:
-        updates.cancelled_at = existing.canceled_at || now;
+        updates.canceled_at = existing.canceled_at || now;
         this.updateOrgMemberAvailable(incidentId, true);
         break;
-      case IncidentStatus.CLOSED:
-        updates.closed_at = existing.closed_at || now;
-        this.updateOrgMemberAvailable(incidentId, true);
+      case IncidentStatus.FALSE_REPORT:
+        updates.false_report_at = existing.false_report_at || now;
         break;
     }
 
@@ -323,7 +322,7 @@ export class IncidentsService {
       .from('incidents')
       .update({
         status: IncidentStatus.CANCELLED,
-        closed_at: new Date().toISOString(),
+        canceled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('incident_id', incidentId);
@@ -480,11 +479,13 @@ export class IncidentsService {
       scene_commander_id: incident.scene_commander_id,
       image_url: incident.image_url,
       reported_at: incident.reported_at,
+      accepted_at: incident.accepted_at,
       onscene_at: incident.onscene_at,
+      canceled_at: incident.canceled_at,
       en_route_at: incident.en_route_at,
       arrived_at: incident.arrived_at,
+      false_report_at: incident.false_report_at,
       resolved_at: incident.resolved_at,
-      closed_at: incident.closed_at,
       is_silent: incident.is_silent,
       is_anonymous: incident.is_anonymous,
       is_verified: incident.is_verified,
@@ -561,14 +562,13 @@ export class IncidentsService {
       scene_commander_org_member: sceneCommanderOrgMember,
       image_url: incident.image_url,
       reported_at: incident.reported_at,
+      accepted_at: incident.accepted_at,
       onscene_at: incident.onscene_at,
-      acknowledge_at: incident.acknowledge_at,
-      false_report_at: incident.false_report_at,
       canceled_at: incident.canceled_at,
       en_route_at: incident.en_route_at,
       arrived_at: incident.arrived_at,
+      false_report_at: incident.false_report_at,
       resolved_at: incident.resolved_at,
-      closed_at: incident.closed_at,
       is_silent: incident.is_silent,
       is_anonymous: incident.is_anonymous,
       is_verified: incident.is_verified,
