@@ -25,8 +25,7 @@ export enum IncidentType {
 }
 
 export enum IncidentStatus {
-  RECEIVED = 'RECEIVED',
-  DISPATCHED = 'DISPATCHED',
+  WAITING_FOR_RESPONSE = 'WAITING_FOR_RESPONSE',
   ACKNOWLEDGED = 'ACKNOWLEDGED',
   EN_ROUTE = 'EN_ROUTE',
   ON_SCENE = 'ON_SCENE',

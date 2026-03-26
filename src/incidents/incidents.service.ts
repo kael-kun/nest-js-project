@@ -75,7 +75,7 @@ export class IncidentsService {
       .insert({
         incident_id: incidentId,
         type: createIncidentDto.type,
-        status: IncidentStatus.RECEIVED,
+        status: IncidentStatus.WAITING_FOR_RESPONSE,
         location,
         title: createIncidentDto.title,
         description: createIncidentDto.description,
@@ -245,9 +245,6 @@ export class IncidentsService {
 
     const now = new Date().toISOString();
     switch (updateDto.status) {
-      case IncidentStatus.DISPATCHED:
-        updates.dispatched_at = existing.dispatched_at || now;
-        break;
       case IncidentStatus.EN_ROUTE:
         updates.en_route_at = existing.en_route_at || now;
         break;
