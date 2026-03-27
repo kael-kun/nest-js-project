@@ -43,7 +43,7 @@ export class IncidentsController {
 
   @UseGuards(JwtAuthGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'ORG_ADMIN')
-  @Get('/reporter')
+  @Get('/citizen')
   @ApiOperation({ summary: 'Get incidents by reporter' })
   @ApiResponse({
     status: 200,
@@ -57,53 +57,6 @@ export class IncidentsController {
     return this.incidentsService.findByReporter(userId, page, limit);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/reporter/:userId')
-  @ApiOperation({
-    summary: 'Get all reported incidents of a specific user',
-    description:
-      'Returns a paginated list of all emergency incidents reported by the specified user.',
-  })
-  @ApiParam({
-    name: 'userId',
-    description: 'UUID of the user whose reported incidents to retrieve',
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Items per page, max 100 (default: 10)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Paginated list of incidents reported by the specified user',
-    schema: {
-      example: {
-        incidents: [
-          {
-            incident_id: 'EMG-20260326-0001',
-            type: 'MEDICAL',
-            priority: 'HIGH',
-            status: 'WAITING_FOR_RESPONSE',
-            location: { type: 'Point', coordinates: [120.9842, 14.5995] },
-            title: 'Car accident on Highway 1',
-            description: 'Two vehicles collided, one driver injured',
-            address: '123 Main Street, Quezon City',
-            landmark: 'Near Mercury Drug Store',
-            reporter_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-            image_url: null,
-            reported_at: '2026-03-26T08:00:00.000Z',
-            is_silent: false,
-            is_anonymous: false,
-            is_verified: false,
-            false_report_count: 0,
-            created_at: '2026-03-26T08:00:00.000Z',
-          },
-        ],
-        total: 1,
-        page: 1,
-        limit: 10,
-        totalPages: 1,
-      },
-    },
-  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findReportedByUser(
     @Param('userId') userId: string,
@@ -114,7 +67,7 @@ export class IncidentsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/commander')
+  @Get('/responder')
   @ApiOperation({ summary: 'Get incidents by scene commander' })
   @ApiResponse({
     status: 200,
