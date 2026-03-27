@@ -474,16 +474,21 @@ export class IncidentsService {
     };
   }
   private toResponse(incident: Incident): IncidentResponse {
+    const parsed = this.parseLocation(incident.location);
     return {
       incident_id: incident.incident_id,
       type: incident.type,
       priority: incident.priority,
       status: incident.status,
-      location: this.parseLocation(incident.location) ?? undefined,
+      location: {
+        address: incident.address ?? '',
+        coordinates: parsed
+          ? { lat: parsed.coordinates[1], lng: parsed.coordinates[0] }
+          : undefined,
+        landmark: incident.landmark ?? '',
+      },
       title: incident.title,
       description: incident.description,
-      address: incident.address,
-      landmark: incident.landmark,
       reporter_id: incident.reporter_id,
       scene_commander_id: incident.scene_commander_id,
       image_url: incident.image_url,
@@ -548,16 +553,21 @@ export class IncidentsService {
       commanderOrgMember?.organization,
     );
 
+    const parsedLocation = this.parseLocation(incident.location);
     return {
       incident_id: incident.incident_id,
       type: incident.type,
       priority: incident.priority,
       status: incident.status,
-      location: this.parseLocation(incident.location) ?? undefined,
+      location: {
+        address: incident.address ?? '',
+        coordinates: parsedLocation
+          ? { lat: parsedLocation.coordinates[1], lng: parsedLocation.coordinates[0] }
+          : undefined,
+        landmark: incident.landmark ?? '',
+      },
       title: incident.title,
       description: incident.description,
-      address: incident.address,
-      landmark: incident.landmark,
       reporter_id: incident.reporter_id,
       reporter,
       scene_commander_id: incident.scene_commander_id,

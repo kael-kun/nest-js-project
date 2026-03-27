@@ -75,11 +75,16 @@ export interface IncidentResponse {
   type: IncidentType;
   priority: PriorityLevel;
   status: IncidentStatus;
-  location?: { type: string; coordinates: [number, number] };
+  location?: {
+    address?: string;
+    coordinates?: {
+      lat: number;
+      lng: number;
+    };
+    landmark?: string;
+  };
   title: string;
   description?: string;
-  address?: string;
-  landmark?: string;
   reporter_id?: string;
   reporter?: IncidentResponderInfo;
   scene_commander_id?: string;

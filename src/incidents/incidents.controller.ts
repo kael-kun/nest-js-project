@@ -114,7 +114,43 @@ export class IncidentsController {
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   @ApiOperation({ summary: 'Get incident by ID' })
-  @ApiResponse({ status: 200, description: 'Incident details' })
+  @ApiResponse({
+    status: 200,
+    description: 'Incident details',
+    schema: {
+      properties: {
+        incident_id: { type: 'string', example: 'EMG-20260327-0001' },
+        type: { type: 'string', example: 'MEDICAL' },
+        priority: { type: 'string', example: 'HIGH' },
+        status: { type: 'string', example: 'WAITING_FOR_RESPONSE' },
+        location: {
+          type: 'object',
+          properties: {
+            address: { type: 'string', example: '123 Main Street, Quezon City' },
+            coordinates: {
+              type: 'object',
+              properties: {
+                lat: { type: 'number', example: 14.5995 },
+                lng: { type: 'number', example: 120.9842 },
+              },
+            },
+            landmark: { type: 'string', example: 'Near Mercury Drug Store' },
+          },
+        },
+        title: { type: 'string', example: 'Car accident on Highway 1' },
+        description: { type: 'string', example: 'Two vehicles collided, one driver injured' },
+        reporter_id: { type: 'string', example: 'uuid-of-reporter' },
+        scene_commander_id: { type: 'string', example: 'uuid-of-commander' },
+        image_url: { type: 'string', example: 'https://cdn.example.com/incidents/image.jpg' },
+        reported_at: { type: 'string', example: '2026-03-27T08:00:00.000Z' },
+        is_silent: { type: 'boolean', example: false },
+        is_anonymous: { type: 'boolean', example: false },
+        is_verified: { type: 'boolean', example: false },
+        false_report_count: { type: 'number', example: 0 },
+        created_at: { type: 'string', example: '2026-03-27T08:00:00.000Z' },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Incident not found' })
   async findOne(@Param('id') id: string) {
     return this.incidentsService.findById(id);
