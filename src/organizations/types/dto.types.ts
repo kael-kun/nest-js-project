@@ -268,11 +268,6 @@ export class InviteMemberDto {
   @IsOptional()
   @IsEnum(ResponderTypeEnum)
   responder_type?: ResponderTypeEnum;
-
-  // for kilometer_radius
-  @ApiProperty({ nullable: true })
-  @IsNumber()
-  kilometer_radius: number;
 }
 
 export class RevokeMemberDto {
@@ -502,4 +497,23 @@ export class MemberWithUserDto {
 
   @ApiProperty({ type: MemberUserDto })
   user: MemberUserDto;
+}
+
+export class OrgConfigDto {
+  @ApiProperty({ enum: ['RESPONDER', 'DISPATCHER'], example: 'RESPONDER' })
+  @IsEnum(['RESPONDER', 'DISPATCHER'])
+  role: 'RESPONDER' | 'DISPATCHER';
+
+  @ApiProperty({ example: 5, description: 'Kilometer radius for this role' })
+  @IsNumber()
+  @MinLength(1)
+  kilometer_radius: number;
+}
+
+export class UpdateOrgConfigsDto {
+  @ApiProperty({ type: [OrgConfigDto], description: 'Configs to update' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrgConfigDto)
+  configs: OrgConfigDto[];
 }

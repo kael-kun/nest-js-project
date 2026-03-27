@@ -35,6 +35,7 @@ import {
   MemberWithUserDto,
   OrganizationType,
   OrganizationLevel,
+  UpdateOrgConfigsDto,
 } from './types/dto.types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -718,5 +719,49 @@ export class OrganizationsController {
   @ApiResponse({ status: 404, description: 'Parent organization not found' })
   async getSubOrganizations(@Param('id') parentOrgId: string) {
     return this.organizationsService.getSubOrganizations(parentOrgId);
+  }
+
+  @Get(':id/configs')
+  @UseGuards(JwtAuthGuard, OrgAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get organization configs',
+    description: 'Returns all org_configs for this organization.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Organization UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of org configs',
+  })
+  async getConfigs(@Param('id') orgId: string) {
+    return this.organizationsService.getConfigs(orgId);
+  }
+
+  @Put(':id/configs')
+  @UseGuards(JwtAuthGuard, OrgAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update organization configs',
+    description: 'Updates kilometer_radius for RESPONDER and/or DISPATCHER roles.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Organization UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiBody({ type: UpdateOrgConfigsDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated org configs',
+  })
+  async updateConfigs(
+    @Param('id') orgId: string,
+    @Body() dto: UpdateOrgConfigsDto,
+  ) {
+    return this.organizationsService.updateConfigs(orgId, dto.configs);
   }
 }

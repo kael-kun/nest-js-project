@@ -220,6 +220,8 @@ export class OrganizationsService {
 
     this.logger.log(`Organization created: ${data.id}`);
 
+    await this.createDefaultConfigs(data.id);
+
     if (createOrganizationDto.initial_admin) {
       await this.createInitialOrgAdmin(
         data.id,
@@ -445,10 +447,9 @@ export class OrganizationsService {
         responder_type: responderType,
         status: 'INVITED' as OrgMemberStatus,
         invited_by: invitedBy,
-        kilometer_radius: dto.kilometer_radius ?? null,
       })
       .select(
-        'id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,kilometer_radius,created_at,updated_at',
+        'id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,created_at,updated_at',
       )
       .single();
 
@@ -983,5 +984,56 @@ export class OrganizationsService {
 
   private toResponse(org: Organization, memberCount = 0): OrganizationResponse {
     return { ...org, member_count: memberCount } as OrganizationResponse;
+  }
+
+  private async createDefaultConfigs(organizationId: string): Promise<void> {
+    const { error } = await this.supabase.client.from('org_configs').insert([
+      { organization_id: organizationId, role: 'RESPONDER', kilometer_radius: 3 },
+      { organization_id: organizationId, role: 'DISPATCHER', kilometer_radius: 3 },
+    ]);
+
+    if (error) {
+      this.logger.error(`Failed to create default configs for org ${organizationId}: ${error.message}`);
+    }
+  }
+
+  async getConfigs(organizationId: string): Promise<import('./types/organization.types').OrgConfig[]> {
+    await this.findById(organizationId);
+
+    const { data, error } = await this.supabase.client
+      .from('org_configs')
+      .select('*')
+      .eq('organization_id', organizationId);
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data;
+  }
+
+  async updateConfigs(
+    organizationId: string,
+    configs: { role: 'RESPONDER' | 'DISPATCHER'; kilometer_radius: number }[],
+  ): Promise<import('./types/organization.types').OrgConfig[]> {
+    await this.findById(organizationId);
+
+    for (const config of configs) {
+      const { error } = await this.supabase.client.from('org_configs').upsert(
+        {
+          organization_id: organizationId,
+          role: config.role,
+          kilometer_radius: config.kilometer_radius,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id,role' },
+      );
+
+      if (error) {
+        throw new BadRequestException(`Failed to update config for role ${config.role}: ${error.message}`);
+      }
+    }
+
+    return this.getConfigs(organizationId);
   }
 }

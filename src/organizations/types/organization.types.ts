@@ -109,7 +109,6 @@ export interface MemberWithUserResponse {
   responder_type: ResponderType | null;
   status: OrgMemberStatus;
   invited_by?: string;
-  kilometer_radius?: number;
   reason?: string;
   created_at: string;
   updated_at: string;
@@ -129,4 +128,13 @@ export interface OrganizationListResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface OrgConfig {
+  id: string;
+  organization_id: string;
+  role: 'RESPONDER' | 'DISPATCHER';
+  kilometer_radius: number;
+  created_at: string;
+  updated_at: string;
 }
