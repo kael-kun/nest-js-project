@@ -8,6 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   Organization,
   OrganizationResponse,
@@ -24,7 +25,11 @@ import {
   CreateDispatcherDto,
   InitialOrgAdminDto,
 } from './types/dto.types';
-import { ORG_ALLOWED_ROLES, VALID_RESPONDER_TYPES, validateResponderTypeSubset } from './organization-permissions';
+import {
+  ORG_ALLOWED_ROLES,
+  VALID_RESPONDER_TYPES,
+  validateResponderTypeSubset,
+} from './organization-permissions';
 import * as bcrypt from 'bcrypt';
 
 const ORGANIZATION_FIELDS =
@@ -34,7 +39,10 @@ const ORGANIZATION_FIELDS =
 export class OrganizationsService {
   private readonly logger = new Logger(OrganizationsService.name);
 
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(
     page: number = 1,
@@ -92,7 +100,9 @@ export class OrganizationsService {
     const countsMap = await this.fetchMemberCountsMap(orgIds);
 
     return {
-      organizations: data.map((org) => this.toResponse(org, countsMap.get(org.id) ?? 0)),
+      organizations: data.map((org) =>
+        this.toResponse(org, countsMap.get(org.id) ?? 0),
+      ),
       total: count,
       page: safePage,
       limit: safeLimit,
@@ -157,8 +167,10 @@ export class OrganizationsService {
       createOrganizationDto.allowed_roles,
     );
 
-    if (createOrganizationDto.allowed_roles.includes('RESPONDER' as any) &&
-        createOrganizationDto.allowed_responder_types.length === 0) {
+    if (
+      createOrganizationDto.allowed_roles.includes('RESPONDER' as any) &&
+      createOrganizationDto.allowed_responder_types.length === 0
+    ) {
       throw new BadRequestException(
         'allowed_responder_types must not be empty when allowed_roles includes RESPONDER',
       );
@@ -194,7 +206,8 @@ export class OrganizationsService {
         website: createOrganizationDto.website,
         allowed_roles: createOrganizationDto.allowed_roles,
         allowed_responder_types: createOrganizationDto.allowed_responder_types,
-        parent_organization_id: createOrganizationDto.parent_organization_id ?? null,
+        parent_organization_id:
+          createOrganizationDto.parent_organization_id ?? null,
       })
       .select(ORGANIZATION_FIELDS)
       .single<Organization | null>();
@@ -237,7 +250,9 @@ export class OrganizationsService {
     }
 
     if (!user.is_active) {
-      throw new BadRequestException('Cannot appoint a deactivated user as ORG_ADMIN');
+      throw new BadRequestException(
+        'Cannot appoint a deactivated user as ORG_ADMIN',
+      );
     }
 
     const { error: memberError } = await this.supabase.client
@@ -253,10 +268,14 @@ export class OrganizationsService {
       });
 
     if (memberError) {
-      throw new ConflictException(`Failed to assign ORG_ADMIN membership: ${memberError.message}`);
+      throw new ConflictException(
+        `Failed to assign ORG_ADMIN membership: ${memberError.message}`,
+      );
     }
 
-    this.logger.log(`Appointed user ${dto.user_id} as initial ORG_ADMIN for org ${orgId}`);
+    this.logger.log(
+      `Appointed user ${dto.user_id} as initial ORG_ADMIN for org ${orgId}`,
+    );
   }
 
   async update(
@@ -266,21 +285,32 @@ export class OrganizationsService {
     const existing = await this.findById(id);
 
     const resolvedType = updateOrganizationDto.type ?? existing.type;
-    const resolvedRoles = updateOrganizationDto.allowed_roles ?? existing.allowed_roles;
+    const resolvedRoles =
+      updateOrganizationDto.allowed_roles ?? existing.allowed_roles;
     const resolvedResponderTypes =
-      updateOrganizationDto.allowed_responder_types ?? existing.allowed_responder_types;
+      updateOrganizationDto.allowed_responder_types ??
+      existing.allowed_responder_types;
 
     if (updateOrganizationDto.type || updateOrganizationDto.allowed_roles) {
       this.validateAllowedRoles(resolvedType, resolvedRoles);
     }
 
-    if (updateOrganizationDto.type || updateOrganizationDto.allowed_responder_types) {
-      if (resolvedRoles.includes('RESPONDER' as any) && resolvedResponderTypes.length === 0) {
+    if (
+      updateOrganizationDto.type ||
+      updateOrganizationDto.allowed_responder_types
+    ) {
+      if (
+        resolvedRoles.includes('RESPONDER' as any) &&
+        resolvedResponderTypes.length === 0
+      ) {
         throw new BadRequestException(
           'allowed_responder_types must not be empty when allowed_roles includes RESPONDER',
         );
       }
-      const invalid = validateResponderTypeSubset(resolvedType, resolvedResponderTypes as any);
+      const invalid = validateResponderTypeSubset(
+        resolvedType,
+        resolvedResponderTypes as any,
+      );
       if (invalid.length > 0) {
         throw new BadRequestException(
           `Responder type(s) "${invalid.join(', ')}" are not valid for org type "${resolvedType}". ` +
@@ -308,8 +338,8 @@ export class OrganizationsService {
         allowed_responder_types: resolvedResponderTypes,
         parent_organization_id:
           updateOrganizationDto.parent_organization_id !== undefined
-            ? updateOrganizationDto.parent_organization_id ?? null
-            : existing.parent_organization_id ?? null,
+            ? (updateOrganizationDto.parent_organization_id ?? null)
+            : (existing.parent_organization_id ?? null),
         is_active: updateOrganizationDto.is_active ?? existing.is_active,
         updated_at: new Date().toISOString(),
       })
@@ -382,7 +412,9 @@ export class OrganizationsService {
       );
     }
 
-    let responderType: import('./types/organization.types').ResponderType | null = null;
+    let responderType:
+      | import('./types/organization.types').ResponderType
+      | null = null;
     if (dto.org_role === 'RESPONDER') {
       const allowedTypes = org.allowed_responder_types ?? [];
 
@@ -415,7 +447,9 @@ export class OrganizationsService {
         invited_by: invitedBy,
         kilometer_radius: dto.kilometer_radius ?? null,
       })
-      .select('id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,kilometer_radius,created_at,updated_at')
+      .select(
+        'id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,kilometer_radius,created_at,updated_at',
+      )
       .single();
 
     if (error || !data) {
@@ -426,6 +460,33 @@ export class OrganizationsService {
       `Invited user ${dto.user_id} to org ${orgId} as ${dto.org_role}` +
         (responderType ? ` (${responderType} responder)` : ''),
     );
+
+    const { data: inviter } = await this.supabase.client
+      .from('users')
+      .select('first_name,last_name')
+      .eq('id', invitedBy)
+      .single();
+
+    const inviterName = inviter
+      ? `${inviter.first_name} ${inviter.last_name}`
+      : 'An administrator';
+
+    await this.notificationsService.create({
+      user_id: dto.user_id,
+      type: 'organization_invite',
+      title: `You have been invited to join ${org.name}`,
+      message: `${inviterName} has invited you to join ${org.name} as ${dto.org_role}${responderType ? ` (${responderType})` : ''}`,
+      data: {
+        organization_id: orgId,
+        organization_name: org.name,
+        org_role: dto.org_role,
+        responder_type: responderType,
+        invite_id: data.id,
+      },
+      action_required: true,
+      action_url: `/organizations/${orgId}`,
+      priority: 'normal',
+    });
 
     return {
       ...data,
@@ -445,7 +506,9 @@ export class OrganizationsService {
     status?: OrgMemberStatus,
   ): Promise<MemberWithUserResponse[]> {
     // log orgId and status for debugging
-    this.logger.debug(`Fetching members for org ${orgId} with status ${status ?? 'ANY'}`);
+    this.logger.debug(
+      `Fetching members for org ${orgId} with status ${status ?? 'ANY'}`,
+    );
     await this.findById(orgId); // ensure org exists
 
     let query = this.supabase.client
@@ -463,7 +526,9 @@ export class OrganizationsService {
     const { data, error } = await query;
 
     if (error) {
-      throw new InternalServerErrorException(`Failed to fetch members: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to fetch members: ${error.message}`,
+      );
     }
 
     if (!data) return [];
@@ -525,7 +590,9 @@ export class OrganizationsService {
       .eq('id', memberId);
 
     if (error) {
-      throw new ConflictException(`Failed to revoke membership: ${error.message}`);
+      throw new ConflictException(
+        `Failed to revoke membership: ${error.message}`,
+      );
     }
 
     this.logger.log(`Revoked membership ${memberId} in org ${orgId}`);
@@ -557,7 +624,9 @@ export class OrganizationsService {
       .eq('id', memberId);
 
     if (error) {
-      throw new InternalServerErrorException(`Failed to cancel invitation: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to cancel invitation: ${error.message}`,
+      );
     }
 
     this.logger.log(`Cancelled invitation ${memberId} in org ${orgId}`);
@@ -589,7 +658,9 @@ export class OrganizationsService {
       .eq('id', memberId);
 
     if (error) {
-      throw new InternalServerErrorException(`Failed to kick member: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to kick member: ${error.message}`,
+      );
     }
 
     this.logger.log(`Kicked membership ${memberId} from org ${orgId}`);
@@ -628,7 +699,9 @@ export class OrganizationsService {
     }
 
     if (member.org_role === dto.org_role) {
-      throw new BadRequestException(`Member already has the ${dto.org_role} role`);
+      throw new BadRequestException(
+        `Member already has the ${dto.org_role} role`,
+      );
     }
 
     const { error } = await this.supabase.client
@@ -642,10 +715,14 @@ export class OrganizationsService {
       .eq('id', memberId);
 
     if (error) {
-      throw new ConflictException(`Failed to update member role: ${error.message}`);
+      throw new ConflictException(
+        `Failed to update member role: ${error.message}`,
+      );
     }
 
-    this.logger.log(`Promoted membership ${memberId} in org ${orgId} to ${dto.org_role}`);
+    this.logger.log(
+      `Promoted membership ${memberId} in org ${orgId} to ${dto.org_role}`,
+    );
   }
 
   async createDispatcherStaff(
@@ -682,7 +759,9 @@ export class OrganizationsService {
       .single();
 
     if (userError || !user) {
-      throw new ConflictException(userError?.message || 'Failed to create dispatcher account');
+      throw new ConflictException(
+        userError?.message || 'Failed to create dispatcher account',
+      );
     }
 
     // Assign DISPATCHER system role
@@ -710,13 +789,17 @@ export class OrganizationsService {
         status: 'ACTIVE',
         invited_by: createdBy,
       })
-      .select('id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,created_at,updated_at')
+      .select(
+        'id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,created_at,updated_at',
+      )
       .single();
 
     if (memberError || !membership) {
       // Roll back user on failure
       await this.supabase.client.from('users').delete().eq('id', user.id);
-      throw new ConflictException(memberError?.message || 'Failed to create dispatcher membership');
+      throw new ConflictException(
+        memberError?.message || 'Failed to create dispatcher membership',
+      );
     }
 
     this.logger.log(`Created dispatcher staff ${user.id} in org ${orgId}`);
@@ -752,7 +835,9 @@ export class OrganizationsService {
     }
 
     if (!user.is_active) {
-      throw new BadRequestException('Cannot appoint a deactivated user as ORG_ADMIN');
+      throw new BadRequestException(
+        'Cannot appoint a deactivated user as ORG_ADMIN',
+      );
     }
 
     const { data: existing } = await this.supabase.client
@@ -765,7 +850,9 @@ export class OrganizationsService {
 
     if (existing) {
       if (existing.org_role === 'ORG_ADMIN' && existing.status === 'ACTIVE') {
-        throw new ConflictException('User is already an ORG_ADMIN of this organization');
+        throw new ConflictException(
+          'User is already an ORG_ADMIN of this organization',
+        );
       }
       throw new ConflictException(
         `User already has a "${existing.status}" "${existing.org_role}" membership in this organization`,
@@ -783,11 +870,15 @@ export class OrganizationsService {
         status: 'ACTIVE',
         invited_by: addedBy,
       })
-      .select('id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,created_at,updated_at')
+      .select(
+        'id,user_id,organization_id,org_role,org_type,responder_type,status,invited_by,reason,created_at,updated_at',
+      )
       .single();
 
     if (error || !membership) {
-      throw new ConflictException(error?.message || 'Failed to appoint ORG_ADMIN');
+      throw new ConflictException(
+        error?.message || 'Failed to appoint ORG_ADMIN',
+      );
     }
 
     this.logger.log(`Appointed user ${userId} as ORG_ADMIN for org ${orgId}`);
@@ -831,10 +922,14 @@ export class OrganizationsService {
       .eq('id', memberId);
 
     if (error) {
-      throw new InternalServerErrorException(`Failed to remove ORG_ADMIN: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to remove ORG_ADMIN: ${error.message}`,
+      );
     }
 
-    this.logger.log(`Removed ORG_ADMIN membership ${memberId} from org ${orgId}`);
+    this.logger.log(
+      `Removed ORG_ADMIN membership ${memberId} from org ${orgId}`,
+    );
   }
 
   async createSubOrganization(
@@ -845,10 +940,15 @@ export class OrganizationsService {
     await this.findById(parentOrgId); // ensure parent exists
 
     // Force parent link regardless of what dto.parent_organization_id says
-    return this.create({ ...dto, parent_organization_id: parentOrgId }, createdBy);
+    return this.create(
+      { ...dto, parent_organization_id: parentOrgId },
+      createdBy,
+    );
   }
 
-  async getSubOrganizations(parentOrgId: string): Promise<OrganizationResponse[]> {
+  async getSubOrganizations(
+    parentOrgId: string,
+  ): Promise<OrganizationResponse[]> {
     await this.findById(parentOrgId);
 
     const { data, error } = await this.supabase.client
@@ -863,8 +963,10 @@ export class OrganizationsService {
     return data.map((org) => this.toResponse(org, countsMap.get(org.id) ?? 0));
   }
 
-  private async fetchMemberCountsMap(orgIds: string[]): Promise<Map<string, number>> {
-    const map = new Map<string, number>(orgIds.map(id => [id, 0]));
+  private async fetchMemberCountsMap(
+    orgIds: string[],
+  ): Promise<Map<string, number>> {
+    const map = new Map<string, number>(orgIds.map((id) => [id, 0]));
     if (orgIds.length === 0) return map;
 
     const { data } = await this.supabase.client

@@ -10,6 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import { SupabaseModule } from './supabase/supabase.module';
 import { UserRolesModule } from './user-roles/user-roles.module';
 import { CloudflareR2Module } from './r2_bucket/cloudflareR2.module';
+import { NotificationsModule } from './notifications/notifications.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,6 +32,7 @@ import { CloudflareR2Module } from './r2_bucket/cloudflareR2.module';
     IncidentsModule,
     UserRolesModule,
     EventsModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [
