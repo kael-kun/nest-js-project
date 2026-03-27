@@ -102,6 +102,7 @@ export class OrganizationsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, OrgAdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get organization by ID',
     description:
@@ -124,6 +125,7 @@ export class OrganizationsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({
@@ -211,6 +213,7 @@ export class OrganizationsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @Roles('ADMIN')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -696,6 +699,7 @@ export class OrganizationsController {
 
   @Get(':id/sub-organizations')
   @UseGuards(JwtAuthGuard, OrgAdminGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'List sub-organizations',
     description:
