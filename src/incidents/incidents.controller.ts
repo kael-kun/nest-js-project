@@ -44,10 +44,10 @@ export class IncidentsController {
   @UseGuards(JwtAuthGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'ORG_ADMIN')
   @Get('/citizen')
-  @ApiOperation({ summary: 'Get incidents by reporter' })
+  @ApiOperation({ summary: 'Get incidents by citizen' })
   @ApiResponse({
     status: 200,
-    description: 'List of incidents reported by user',
+    description: 'List of incidents reported by citizen',
   })
   async findByReporter(
     @CurrentUserId() userId: string,
@@ -68,10 +68,10 @@ export class IncidentsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('/responder')
-  @ApiOperation({ summary: 'Get incidents by scene commander' })
+  @ApiOperation({ summary: 'Get incidents by responder' })
   @ApiResponse({
     status: 200,
-    description: 'List of incidents managed by user',
+    description: 'List of incidents managed by responder',
   })
   async findBySceneCommander(
     @CurrentUserId() userId: string,
