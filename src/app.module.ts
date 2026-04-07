@@ -11,6 +11,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { UserRolesModule } from './user-roles/user-roles.module';
 import { CloudflareR2Module } from './r2_bucket/cloudflareR2.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ResponderModule } from './responder/responder.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -33,6 +34,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     UserRolesModule,
     EventsModule,
     NotificationsModule,
+    ResponderModule,
   ],
   controllers: [],
   providers: [

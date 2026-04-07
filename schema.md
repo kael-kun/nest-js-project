@@ -145,6 +145,7 @@ responder_type text,
 status org_member_status_enum NOT NULL DEFAULT 'INVITED',
 invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
 reason TEXT,
+location geography(Point, 4326) not null,
 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 CONSTRAINT uq_organization_members UNIQUE (user_id, organization_id),
@@ -262,3 +263,122 @@ kilometer_radius integer default 3,
 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+////// get nearby incidentt for responder ////
+
+CREATE OR REPLACE FUNCTION get_nearby_incidents_for_user(
+target_user_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+incidents JSONB -- Returns a single JSONB column containing the array of incidents
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+v_effective_user_id UUID;
+v_member_location GEOGRAPHY(Point, 4326);
+v_org_id UUID;
+v_role VARCHAR(50);
+v_radius_km INTEGER;
+BEGIN
+-- 1. Determine User ID
+IF target_user_id IS NOT NULL THEN
+v_effective_user_id := target_user_id;
+ELSE
+v_effective_user_id := auth.uid();
+END IF;
+
+IF v_effective_user_id IS NULL THEN
+RAISE EXCEPTION 'User ID is required or must be authenticated';
+END IF;
+
+-- 2. Get Member Context (Location, Org, Role)
+SELECT om.location, om.organization_id, om.org_role::VARCHAR
+INTO v_member_location, v_org_id, v_role
+FROM organization_members om
+WHERE om.user_id = v_effective_user_id
+LIMIT 1;
+
+IF v_member_location IS NULL THEN
+-- Return empty JSON array if no location found
+incidents := '[]'::jsonb;
+RETURN NEXT;
+RETURN;
+END IF;
+
+-- 3. Get Configured Radius
+SELECT oc.kilometer_radius
+INTO v_radius_km
+FROM org_configs oc
+WHERE oc.organization_id = v_org_id
+AND oc.role = v_role
+LIMIT 1;
+
+IF v_radius_km IS NULL THEN
+v_radius_km := 5; -- Default fallback
+END IF;
+
+-- 4. Build and Return JSON
+RETURN QUERY
+SELECT jsonb_agg(incident_data ORDER BY distance_meters ASC)
+FROM (
+SELECT
+jsonb_build_object(
+'incident_id', i.incident_id,
+'type', i.type,
+'priority', i.priority,
+'status', i.status,
+
+        -- Nested Location Object
+        'location', jsonb_build_object(
+          'address', i.address,
+          'landmark', i.landmark
+        ),
+
+        'title', i.title,
+        'description', i.description,
+        'reporter_id', i.reporter_id,
+        'image_url', i.image_url,
+        'reported_at', i.reported_at,
+
+        -- Dynamic Status Logs Array
+        'status_logs', (
+          SELECT jsonb_agg(log_entry ORDER BY log_timestamp ASC)
+          FROM (
+            SELECT jsonb_build_object('status', 'WAITING_FOR_RESPONSE', 'timestamp', i.reported_at) AS log_entry, i.reported_at AS log_timestamp WHERE i.reported_at IS NOT NULL
+            UNION ALL
+            SELECT jsonb_build_object('status', 'ACCEPTED', 'timestamp', i.accepted_at), i.accepted_at WHERE i.accepted_at IS NOT NULL
+            UNION ALL
+            SELECT jsonb_build_object('status', 'EN_ROUTE', 'timestamp', i.en_route_at), i.en_route_at WHERE i.en_route_at IS NOT NULL
+            UNION ALL
+            SELECT jsonb_build_object('status', 'ON_SCENE', 'timestamp', i.arrived_at), i.arrived_at WHERE i.arrived_at IS NOT NULL
+            UNION ALL
+            SELECT jsonb_build_object('status', 'CANCELLED', 'timestamp', i.canceled_at), i.canceled_at WHERE i.canceled_at IS NOT NULL
+            UNION ALL
+            SELECT jsonb_build_object('status', 'FALSE_REPORT', 'timestamp', i.false_report_at), i.false_report_at WHERE i.false_report_at IS NOT NULL
+            UNION ALL
+            SELECT jsonb_build_object('status', 'RESOLVED', 'timestamp', i.resolved_at), i.resolved_at WHERE i.resolved_at IS NOT NULL
+          ) AS logs_subquery
+        ),
+
+        'is_silent', i.is_silent,
+        'is_anonymous', i.is_anonymous,
+        'is_verified', i.is_verified,
+        'false_report_count', i.false_report_count,
+        'created_at', i.created_at
+      ) AS incident_data,
+      ST_Distance(i.location, v_member_location) AS distance_meters
+    FROM
+      incidents i
+    WHERE
+      i.status NOT IN ('RESOLVED', 'FALSE_REPORT')
+      AND ST_DWithin(i.location, v_member_location, v_radius_km * 1000)
+
+) AS subquery;
+
+END;
+
+$$
+;
+$$

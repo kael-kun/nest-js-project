@@ -9,11 +9,7 @@ import {
   Max,
 } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-
-function emptyToUndefined() {
-  return Transform(({ value }) => (value === '' ? undefined : value));
-}
+import { Transform, Type } from 'class-transformer';
 
 export enum IncidentType {
   MEDICAL = 'MEDICAL',
@@ -60,19 +56,23 @@ export class CreateIncidentDto {
   description?: string;
 
   @ApiProperty({ example: 14.5995 })
+  @Type(() => Number)
   @IsNumber()
   latitude: number;
 
   @ApiProperty({ example: 120.9842 })
+  @Type(() => Number)
   @IsNumber()
   longitude: number;
 
   @ApiProperty({ required: false, example: false })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   is_silent?: boolean;
 
   @ApiProperty({ required: false, example: false })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   is_anonymous?: boolean;

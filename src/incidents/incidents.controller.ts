@@ -126,7 +126,10 @@ export class IncidentsController {
         location: {
           type: 'object',
           properties: {
-            address: { type: 'string', example: '123 Main Street, Quezon City' },
+            address: {
+              type: 'string',
+              example: '123 Main Street, Quezon City',
+            },
             coordinates: {
               type: 'object',
               properties: {
@@ -138,10 +141,16 @@ export class IncidentsController {
           },
         },
         title: { type: 'string', example: 'Car accident on Highway 1' },
-        description: { type: 'string', example: 'Two vehicles collided, one driver injured' },
+        description: {
+          type: 'string',
+          example: 'Two vehicles collided, one driver injured',
+        },
         reporter_id: { type: 'string', example: 'uuid-of-reporter' },
         scene_commander_id: { type: 'string', example: 'uuid-of-commander' },
-        image_url: { type: 'string', example: 'https://cdn.example.com/incidents/image.jpg' },
+        image_url: {
+          type: 'string',
+          example: 'https://cdn.example.com/incidents/image.jpg',
+        },
         reported_at: { type: 'string', example: '2026-03-27T08:00:00.000Z' },
         is_silent: { type: 'boolean', example: false },
         is_anonymous: { type: 'boolean', example: false },

@@ -562,7 +562,10 @@ export class IncidentsService {
       location: {
         address: incident.address ?? '',
         coordinates: parsedLocation
-          ? { lat: parsedLocation.coordinates[1], lng: parsedLocation.coordinates[0] }
+          ? {
+              lat: parsedLocation.coordinates[1],
+              lng: parsedLocation.coordinates[0],
+            }
           : undefined,
         landmark: incident.landmark ?? '',
       },
@@ -584,42 +587,65 @@ export class IncidentsService {
     };
   }
 
-  private buildStatusLogs(incident: any): { status: IncidentStatus; timestamp: string }[] {
+  private buildStatusLogs(
+    incident: any,
+  ): { status: IncidentStatus; timestamp: string }[] {
     const logs: { status: IncidentStatus; timestamp: string }[] = [];
 
     // WAITING_FOR_RESPONSE - always exists when incident exists
     if (incident.reported_at) {
-      logs.push({ status: IncidentStatus.WAITING_FOR_RESPONSE, timestamp: incident.reported_at });
+      logs.push({
+        status: IncidentStatus.WAITING_FOR_RESPONSE,
+        timestamp: incident.reported_at,
+      });
     }
 
     // ACCEPTED
     if (incident.accepted_at) {
-      logs.push({ status: IncidentStatus.ACCEPTED, timestamp: incident.accepted_at });
+      logs.push({
+        status: IncidentStatus.ACCEPTED,
+        timestamp: incident.accepted_at,
+      });
     }
 
     // EN_ROUTE
     if (incident.en_route_at) {
-      logs.push({ status: IncidentStatus.EN_ROUTE, timestamp: incident.en_route_at });
+      logs.push({
+        status: IncidentStatus.EN_ROUTE,
+        timestamp: incident.en_route_at,
+      });
     }
 
     // ON_SCENE (maps to arrived_at in DB)
     if (incident.arrived_at) {
-      logs.push({ status: IncidentStatus.ON_SCENE, timestamp: incident.arrived_at });
+      logs.push({
+        status: IncidentStatus.ON_SCENE,
+        timestamp: incident.arrived_at,
+      });
     }
 
     // CANCELLED
     if (incident.canceled_at) {
-      logs.push({ status: IncidentStatus.CANCELLED, timestamp: incident.canceled_at });
+      logs.push({
+        status: IncidentStatus.CANCELLED,
+        timestamp: incident.canceled_at,
+      });
     }
 
     // FALSE_REPORT
     if (incident.false_report_at) {
-      logs.push({ status: IncidentStatus.FALSE_REPORT, timestamp: incident.false_report_at });
+      logs.push({
+        status: IncidentStatus.FALSE_REPORT,
+        timestamp: incident.false_report_at,
+      });
     }
 
     // RESOLVED
     if (incident.resolved_at) {
-      logs.push({ status: IncidentStatus.RESOLVED, timestamp: incident.resolved_at });
+      logs.push({
+        status: IncidentStatus.RESOLVED,
+        timestamp: incident.resolved_at,
+      });
     }
 
     return logs;
