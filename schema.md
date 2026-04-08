@@ -279,7 +279,7 @@ DECLARE
 v_effective_user_id UUID;
 v_member_location GEOGRAPHY(Point, 4326);
 v_org_id UUID;
-v_role VARCHAR(50);
+v_user_role_names TEXT[]; -- Array to hold role names (e.g., ['RESPONDER', 'DISPATCHER'])
 v_radius_km NUMERIC;
 BEGIN
 -- 1. Determine User ID
@@ -293,29 +293,55 @@ END IF;
         RAISE EXCEPTION 'User ID is required or must be authenticated';
     END IF;
 
-    -- 2. Get Member Context (Location, Org, Role)
-    SELECT om.location, om.organization_id, om.org_role::VARCHAR
-    INTO v_member_location, v_org_id, v_role
+    -- 2. Get Member Context (Location, Org) and All Associated Role Names
+    -- We join organization_members -> user_roles -> roles to get the actual role names
+    SELECT
+        om.location,
+        om.organization_id,
+        ARRAY_AGG(DISTINCT r.name)::TEXT[]
+    INTO v_member_location, v_org_id, v_user_role_names
     FROM organization_members om
+    LEFT JOIN user_roles ur ON ur.user_id = om.user_id
+    LEFT JOIN roles r ON r.id = ur.role_id
     WHERE om.user_id = v_effective_user_id
+    GROUP BY om.location, om.organization_id
     LIMIT 1;
 
-    IF v_member_location IS NULL THEN
+    -- If user is not found in any organization or has no location
+    IF v_member_location IS NULL OR v_org_id IS NULL THEN
         incidents := '[]'::jsonb;
         RETURN NEXT;
         RETURN;
     END IF;
 
-    -- 3. Get Configured Radius
-    SELECT oc.kilometer_radius
-    INTO v_radius_km
-    FROM org_configs oc
-    WHERE oc.organization_id = v_org_id
-      AND oc.role = v_role
-    LIMIT 1;
+    -- 3. Determine Radius based on Role Priority: DISPATCHER > RESPONDER
 
+    -- Check if user has DISPATCHER role
+    IF 'DISPATCHER' = ANY(v_user_role_names) THEN
+        SELECT oc.kilometer_radius
+        INTO v_radius_km
+        FROM org_configs oc
+        WHERE oc.organization_id = v_org_id
+          AND oc.role = 'DISPATCHER'
+        LIMIT 1;
+
+    -- Else check if user has RESPONDER role
+    ELSIF 'RESPONDER' = ANY(v_user_role_names) THEN
+        SELECT oc.kilometer_radius
+        INTO v_radius_km
+        FROM org_configs oc
+        WHERE oc.organization_id = v_org_id
+          AND oc.role = 'RESPONDER'
+        LIMIT 1;
+
+    ELSE
+        -- User has other roles or no specific role configured for radius
+        v_radius_km := NULL;
+    END IF;
+
+    -- Fallback if config was not found for the specific role
     IF v_radius_km IS NULL THEN
-        v_radius_km := 5; -- Default fallback
+        v_radius_km := 5; -- Default fallback radius in KM
     END IF;
 
     -- 4. Build and Return JSON
@@ -376,11 +402,7 @@ END IF;
                 v_member_location,
                 (v_radius_km * 1000)::DOUBLE PRECISION
             )
-
     ) AS subquery;
 
 END;
-
-$$
-;
-$$
+$$;
