@@ -5,6 +5,7 @@ import { User } from '../users/types/user.types';
 import { SessionsService } from './sessions.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { OrganizationsService } from '../organizations/organizations.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
@@ -14,6 +15,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private sessionsService: SessionsService,
+    private organizationsService: OrganizationsService,
   ) {}
 
   async login(loginDto: LoginDto, ipAddress?: string) {
@@ -49,6 +51,25 @@ export class AuthService {
     // Fire-and-forget — don't block login on this
     void this.usersService.updateLastLogin(user.id);
 
+    const orgConfigs = await Promise.all(
+      user.organizations.map(async (orgMembership) => {
+        const configs = await this.organizationsService.getConfigs(
+          orgMembership.organization_id,
+        );
+        const responderConfig = configs.find(
+          (c) => c.role === 'RESPONDER',
+        );
+        const dispatcherConfig = configs.find(
+          (c) => c.role === 'DISPATCHER',
+        );
+        return {
+          organization_id: orgMembership.organization_id,
+          responder_kilometer_radius: responderConfig?.kilometer_radius ?? null,
+          dispatcher_kilometer_radius: dispatcherConfig?.kilometer_radius ?? null,
+        };
+      }),
+    );
+
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -59,6 +80,7 @@ export class AuthService {
         first_name: user.first_name,
         last_name: user.last_name,
         roles: user.roles.map((r) => ({ name: r.name })),
+        org_configs: orgConfigs,
       },
     };
   }
