@@ -512,7 +512,7 @@ export class OrgConfigDto {
   @ApiProperty({ example: 5, description: 'Kilometer radius for this role' })
   @IsNumber()
   @Type(() => Number)
-  @Min(1)
+  @Min(0.1)
   kilometer_radius!: number;
 }
 
