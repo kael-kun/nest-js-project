@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Put,
   Delete,
@@ -15,7 +16,11 @@ import {
 } from '@nestjs/swagger';
 import { UserRolesService } from './user-roles.service';
 import { UsersService } from '../users/users.service';
-import { AddUserRoleDto, UpdateUserRolesDto } from './dto/user-roles.dto';
+import {
+  AddUserRoleDto,
+  UpdateUserRolesDto,
+  RoleDto,
+} from './dto/user-roles.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OwnershipGuard } from '../auth/guards/ownership.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -29,6 +34,18 @@ export class UserRolesController {
     private readonly userRolesService: UserRolesService,
     private readonly usersService: UsersService,
   ) {}
+
+  @Get('roles')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get all available roles' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all roles',
+    type: [RoleDto],
+  })
+  async findAllRoles() {
+    return this.userRolesService.findAllRoles();
+  }
 
   @Post()
   @Roles('ADMIN')

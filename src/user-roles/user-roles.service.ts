@@ -6,6 +6,19 @@ import { AddUserRoleDto } from './dto/user-roles.dto';
 export class UserRolesService {
   constructor(private supabase: SupabaseService) {}
 
+  async findAllRoles() {
+    const { data, error } = await this.supabase.client
+      .from('roles')
+      .select('id, name, description')
+      .order('name', { ascending: true });
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return data;
+  }
+
   async addRole(dto: AddUserRoleDto) {
     const { data: existingUser } = await this.supabase.client
       .from('users')

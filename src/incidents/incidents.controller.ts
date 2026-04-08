@@ -28,6 +28,7 @@ import {
   UpdateIncidentDto,
   UpdateIncidentStatusDto,
   IncidentFiltersDto,
+  IncidentStatus,
 } from './types/dto.types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -40,6 +41,26 @@ import { FileValidationPipe } from '../r2_bucket/pipes/file-validation.pipe';
 @ApiBearerAuth()
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
+
+  @Get('/status-list')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get incident status list',
+    description: 'Returns all available incident statuses.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of incident statuses',
+  })
+  getStatusList() {
+    return Object.values(IncidentStatus).map((status) => ({
+      value: status,
+      label: status
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    }));
+  }
 
   @UseGuards(JwtAuthGuard)
   @Roles('ADMIN', 'DISPATCHER', 'RESPONDER', 'ORG_ADMIN')
