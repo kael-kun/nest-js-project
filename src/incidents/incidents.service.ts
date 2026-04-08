@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CloudflareService } from '../r2_bucket/cloudflare.service';
+import { IncidentGateway } from '../events/incident.gateway';
 import {
   Incident,
   IncidentResponse,
@@ -27,6 +28,7 @@ export class IncidentsService {
   constructor(
     private supabase: SupabaseService,
     private cloudflare: CloudflareService,
+    private incidentGateway: IncidentGateway,
   ) {}
 
   private generateIncidentId(): string {
@@ -100,7 +102,14 @@ export class IncidentsService {
       );
     }
 
-    return this.toResponse(data);
+    const response = this.toResponse(data);
+
+    // Broadcast to responders unless silent
+    if (!createIncidentDto.is_silent) {
+      this.incidentGateway.broadcastNewIncident();
+    }
+
+    return response;
   }
 
   async findAll(
