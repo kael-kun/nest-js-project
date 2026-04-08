@@ -270,7 +270,7 @@ CREATE OR REPLACE FUNCTION get_nearby_incidents_for_user(
 target_user_id UUID DEFAULT NULL
 )
 RETURNS TABLE (
-incidents JSONB -- Returns a single JSONB column containing the array of incidents
+incidents JSONB
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -301,7 +301,6 @@ WHERE om.user_id = v_effective_user_id
 LIMIT 1;
 
 IF v_member_location IS NULL THEN
--- Return empty JSON array if no location found
 incidents := '[]'::jsonb;
 RETURN NEXT;
 RETURN;
@@ -330,10 +329,14 @@ jsonb_build_object(
 'priority', i.priority,
 'status', i.status,
 
-        -- Nested Location Object
+        -- Nested Location Object with Coordinates
         'location', jsonb_build_object(
           'address', i.address,
-          'landmark', i.landmark
+          'landmark', i.landmark,
+          'coordinates', jsonb_build_object(
+            'lat', ST_Y(i.location::geometry), -- Extract Latitude
+            'lng', ST_X(i.location::geometry)  -- Extract Longitude
+          )
         ),
 
         'title', i.title,
@@ -342,24 +345,20 @@ jsonb_build_object(
         'image_url', i.image_url,
         'reported_at', i.reported_at,
 
-        -- Dynamic Status Logs Array
+        -- Dynamic Status Logs Array (Fixed to exclude nulls)
         'status_logs', (
-          SELECT jsonb_agg(log_entry ORDER BY log_timestamp ASC)
+          SELECT jsonb_agg(entry)
           FROM (
-            SELECT jsonb_build_object('status', 'WAITING_FOR_RESPONSE', 'timestamp', i.reported_at) AS log_entry, i.reported_at AS log_timestamp WHERE i.reported_at IS NOT NULL
-            UNION ALL
-            SELECT jsonb_build_object('status', 'ACCEPTED', 'timestamp', i.accepted_at), i.accepted_at WHERE i.accepted_at IS NOT NULL
-            UNION ALL
-            SELECT jsonb_build_object('status', 'EN_ROUTE', 'timestamp', i.en_route_at), i.en_route_at WHERE i.en_route_at IS NOT NULL
-            UNION ALL
-            SELECT jsonb_build_object('status', 'ON_SCENE', 'timestamp', i.arrived_at), i.arrived_at WHERE i.arrived_at IS NOT NULL
-            UNION ALL
-            SELECT jsonb_build_object('status', 'CANCELLED', 'timestamp', i.canceled_at), i.canceled_at WHERE i.canceled_at IS NOT NULL
-            UNION ALL
-            SELECT jsonb_build_object('status', 'FALSE_REPORT', 'timestamp', i.false_report_at), i.false_report_at WHERE i.false_report_at IS NOT NULL
-            UNION ALL
-            SELECT jsonb_build_object('status', 'RESOLVED', 'timestamp', i.resolved_at), i.resolved_at WHERE i.resolved_at IS NOT NULL
-          ) AS logs_subquery
+            VALUES
+              (CASE WHEN i.reported_at IS NOT NULL THEN jsonb_build_object('status', 'WAITING_FOR_RESPONSE', 'timestamp', i.reported_at) END),
+              (CASE WHEN i.accepted_at IS NOT NULL THEN jsonb_build_object('status', 'ACCEPTED', 'timestamp', i.accepted_at) END),
+              (CASE WHEN i.en_route_at IS NOT NULL THEN jsonb_build_object('status', 'EN_ROUTE', 'timestamp', i.en_route_at) END),
+              (CASE WHEN i.arrived_at IS NOT NULL THEN jsonb_build_object('status', 'ON_SCENE', 'timestamp', i.arrived_at) END),
+              (CASE WHEN i.canceled_at IS NOT NULL THEN jsonb_build_object('status', 'CANCELLED', 'timestamp', i.canceled_at) END),
+              (CASE WHEN i.false_report_at IS NOT NULL THEN jsonb_build_object('status', 'FALSE_REPORT', 'timestamp', i.false_report_at) END),
+              (CASE WHEN i.resolved_at IS NOT NULL THEN jsonb_build_object('status', 'RESOLVED', 'timestamp', i.resolved_at) END)
+          ) AS t(entry)
+          WHERE t.entry IS NOT NULL
         ),
 
         'is_silent', i.is_silent,
