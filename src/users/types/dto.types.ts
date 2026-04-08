@@ -24,30 +24,30 @@ export class CreateUserDto {
   @ApiProperty({ example: '+1234567890' })
   @IsString()
   @MaxLength(20)
-  phone: string;
+  phone!: string;
 
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   @IsString()
   @MinLength(6)
   @MaxLength(100)
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'password123' })
   @IsString()
   @MinLength(8)
   @MaxLength(100)
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: 'John' })
   @IsString()
   @MaxLength(100)
-  first_name: string;
+  first_name!: string;
 
   @ApiProperty({ example: 'Doe' })
   @IsString()
   @MaxLength(100)
-  last_name: string;
+  last_name!: string;
 
   @ApiProperty({
     required: false,
@@ -118,12 +118,12 @@ export class CreateEmergencyContactDto {
   @ApiProperty({ example: 'Jane Doe' })
   @IsString()
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: '+1234567890' })
   @IsString()
   @MaxLength(20)
-  phone: string;
+  phone!: string;
 
   @ApiProperty({ example: 'Wife' })
   @IsOptional()
@@ -135,40 +135,40 @@ export class CreateEmergencyContactDto {
 export class UpdateLocationDto {
   @ApiProperty({ example: 14.5995 })
   @IsNumber()
-  latitude: number;
+  latitude!: number;
 
   @ApiProperty({ example: 120.9842 })
   @IsNumber()
-  longitude: number;
+  longitude!: number;
 }
 
 export class UpdateUserRolesDto {
   @ApiProperty({ example: 'uuid-of-role' })
   @IsString()
-  role_id: string;
+  role_id!: string;
 }
 
 export class UserSearchResultDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: 'Juan' })
-  first_name: string;
+  first_name!: string;
 
   @ApiProperty({ example: 'dela Cruz' })
-  last_name: string;
+  last_name!: string;
 
   @ApiProperty({ example: 'juan@example.com' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '+639171234567', nullable: true })
-  phone: string | null;
+  phone!: string | null;
 
   @ApiProperty({
     example: 'https://cdn.example.com/profiles/juan.jpg',
     nullable: true,
   })
-  profile_image_url: string | null;
+  profile_image_url!: string | null;
 
   @ApiProperty({
     example: false,
@@ -176,5 +176,5 @@ export class UserSearchResultDto {
     description:
       'Whether the user already has an INVITED or ACTIVE membership in the queried org. Null when org_id was not provided.',
   })
-  is_member: boolean | null;
+  is_member!: boolean | null;
 }

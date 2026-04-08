@@ -13,21 +13,21 @@ import { ApiProperty, PartialType } from '@nestjs/swagger';
 export class CreateNotificationDto {
   @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
   @IsUUID()
-  user_id: string;
+  user_id!: string;
 
   @ApiProperty({ example: 'incident_assigned' })
   @IsString()
   @MaxLength(50)
-  type: string;
+  type!: string;
 
   @ApiProperty({ example: 'New Incident Assigned' })
   @IsString()
   @MaxLength(200)
-  title: string;
+  title!: string;
 
   @ApiProperty({ example: 'You have been assigned to incident EMG-20260326-0001' })
   @IsString()
-  message: string;
+  message!: string;
 
   @ApiProperty({ required: false, example: { incident_id: 'EMG-20260326-0001' } })
   @IsOptional()
@@ -89,9 +89,9 @@ export class NotificationFiltersDto {
 }
 
 export class NotificationListResponse {
-  notifications: any[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  notifications!: any[];
+  total!: number;
+  page!: number;
+  limit!: number;
+  totalPages!: number;
 }

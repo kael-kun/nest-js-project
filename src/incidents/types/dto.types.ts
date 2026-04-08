@@ -40,12 +40,12 @@ export enum PriorityLevel {
 export class CreateIncidentDto {
   @ApiProperty({ enum: IncidentType, example: 'MEDICAL' })
   @IsEnum(IncidentType)
-  type: IncidentType;
+  type!: IncidentType;
 
   @ApiProperty({ example: 'Car accident on Highway 1' })
   @IsString()
   @IsString()
-  title: string;
+  title!: string;
 
   @ApiProperty({
     required: false,
@@ -58,12 +58,12 @@ export class CreateIncidentDto {
   @ApiProperty({ example: 14.5995 })
   @Type(() => Number)
   @IsNumber()
-  latitude: number;
+  latitude!: number;
 
   @ApiProperty({ example: 120.9842 })
   @Type(() => Number)
   @IsNumber()
-  longitude: number;
+  longitude!: number;
 
   @ApiProperty({ required: false, example: false })
   @Transform(({ value }) => value === 'true' || value === true)
@@ -108,7 +108,7 @@ export class UpdateIncidentDto extends PartialType(CreateIncidentDto) {}
 export class UpdateIncidentStatusDto {
   @ApiProperty({ enum: IncidentStatus, example: 'DISPATCHED' })
   @IsEnum(IncidentStatus)
-  status: IncidentStatus;
+  status!: IncidentStatus;
 
   @ApiProperty({ required: false, example: 'uuid-of-commander' })
   @IsOptional()

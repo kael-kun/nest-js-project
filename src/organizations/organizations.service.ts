@@ -988,16 +988,28 @@ export class OrganizationsService {
 
   private async createDefaultConfigs(organizationId: string): Promise<void> {
     const { error } = await this.supabase.client.from('org_configs').insert([
-      { organization_id: organizationId, role: 'RESPONDER', kilometer_radius: 3 },
-      { organization_id: organizationId, role: 'DISPATCHER', kilometer_radius: 3 },
+      {
+        organization_id: organizationId,
+        role: 'RESPONDER',
+        kilometer_radius: 3,
+      },
+      {
+        organization_id: organizationId,
+        role: 'DISPATCHER',
+        kilometer_radius: 3,
+      },
     ]);
 
     if (error) {
-      this.logger.error(`Failed to create default configs for org ${organizationId}: ${error.message}`);
+      this.logger.error(
+        `Failed to create default configs for org ${organizationId}: ${error.message}`,
+      );
     }
   }
 
-  async getConfigs(organizationId: string): Promise<import('./types/organization.types').OrgConfig[]> {
+  async getConfigs(
+    organizationId: string,
+  ): Promise<import('./types/organization.types').OrgConfig[]> {
     await this.findById(organizationId);
 
     const { data, error } = await this.supabase.client
@@ -1014,23 +1026,30 @@ export class OrganizationsService {
 
   async updateConfigs(
     organizationId: string,
-    configs: { role: 'RESPONDER' | 'DISPATCHER'; kilometer_radius: number }[],
+    configs: {
+      config_id: string;
+      role: 'RESPONDER' | 'DISPATCHER';
+      kilometer_radius: number;
+    }[],
   ): Promise<import('./types/organization.types').OrgConfig[]> {
     await this.findById(organizationId);
 
     for (const config of configs) {
       const { error } = await this.supabase.client.from('org_configs').upsert(
         {
+          id: config.config_id,
           organization_id: organizationId,
           role: config.role,
           kilometer_radius: config.kilometer_radius,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'organization_id,role' },
+        { onConflict: 'id' },
       );
 
       if (error) {
-        throw new BadRequestException(`Failed to update config for role ${config.role}: ${error.message}`);
+        throw new BadRequestException(
+          `Failed to update config ${config.config_id}: ${error.message}`,
+        );
       }
     }
 

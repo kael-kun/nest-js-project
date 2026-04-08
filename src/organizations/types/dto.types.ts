@@ -11,6 +11,7 @@ import {
   IsNumber,
   MaxLength,
   MinLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -88,14 +89,14 @@ export class InitialOrgAdminDto {
       'UUID of an existing user to appoint as the first ORG_ADMIN. The user must be active.',
   })
   @IsUUID()
-  user_id: string;
+  user_id!: string;
 }
 
 export class CreateOrganizationDto {
   @ApiProperty({ example: 'National Police' })
   @IsString()
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiProperty({ required: false, example: 'PNP' })
   @IsOptional()
@@ -106,15 +107,15 @@ export class CreateOrganizationDto {
   @ApiProperty({ example: 'PNP-001' })
   @IsString()
   @MaxLength(50)
-  code: string;
+  code!: string;
 
   @ApiProperty({ enum: OrganizationType, example: 'POLICE' })
   @IsEnum(OrganizationType)
-  type: OrganizationType;
+  type!: OrganizationType;
 
   @ApiProperty({ enum: OrganizationLevel, example: 'NATIONAL' })
   @IsEnum(OrganizationLevel)
-  level: OrganizationLevel;
+  level!: OrganizationLevel;
 
   @ApiProperty({ required: false, example: 'NCR' })
   @IsOptional()
@@ -180,7 +181,7 @@ export class CreateOrganizationDto {
   @ArrayMinSize(1)
   @ArrayUnique()
   @IsEnum(OrgMemberRoleEnum, { each: true })
-  allowed_roles: OrgMemberRoleEnum[];
+  allowed_roles!: OrgMemberRoleEnum[];
 
   @ApiProperty({
     enum: ResponderTypeEnum,
@@ -195,7 +196,7 @@ export class CreateOrganizationDto {
   @IsArray()
   @ArrayUnique()
   @IsEnum(ResponderTypeEnum, { each: true })
-  allowed_responder_types: ResponderTypeEnum[];
+  allowed_responder_types!: ResponderTypeEnum[];
 
   @ApiPropertyOptional({
     type: () => InitialOrgAdminDto,
@@ -220,11 +221,11 @@ export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {
 export class AssignUserToOrganizationDto {
   @ApiProperty({ example: 'CITIZEN202603180123' })
   @IsString()
-  citizen_id: string;
+  citizen_id!: string;
 
   @ApiProperty({ example: 'uuid-of-organization' })
   @IsString()
-  organization_id: string;
+  organization_id!: string;
 }
 
 export class InviteMemberDto {
@@ -233,7 +234,7 @@ export class InviteMemberDto {
     description: 'UUID of the user to invite',
   })
   @IsUUID()
-  user_id: string;
+  user_id!: string;
 
   @ApiProperty({
     enum: [OrgMemberRoleEnum.RESPONDER, OrgMemberRoleEnum.DISPATCHER],
@@ -244,7 +245,7 @@ export class InviteMemberDto {
       'ORG_ADMIN is granted via the promote endpoint only.',
   })
   @IsEnum([OrgMemberRoleEnum.RESPONDER, OrgMemberRoleEnum.DISPATCHER])
-  org_role: OrgMemberRoleEnum.RESPONDER | OrgMemberRoleEnum.DISPATCHER;
+  org_role!: OrgMemberRoleEnum.RESPONDER | OrgMemberRoleEnum.DISPATCHER;
 
   @ApiProperty({
     enum: ResponderTypeEnum,
@@ -291,26 +292,26 @@ export class PromoteMemberDto {
       'are valid promotion targets — RESPONDER cannot be promoted to via this endpoint.',
   })
   @IsEnum([OrgMemberRoleEnum.DISPATCHER, OrgMemberRoleEnum.ORG_ADMIN])
-  org_role: OrgMemberRoleEnum.DISPATCHER | OrgMemberRoleEnum.ORG_ADMIN;
+  org_role!: OrgMemberRoleEnum.DISPATCHER | OrgMemberRoleEnum.ORG_ADMIN;
 }
 
 export class CreateDispatcherDto {
   @ApiProperty({ example: 'Juan', description: 'First name' })
   @IsString()
   @MaxLength(100)
-  first_name: string;
+  first_name!: string;
 
   @ApiProperty({ example: 'dela Cruz', description: 'Last name' })
   @IsString()
   @MaxLength(100)
-  last_name: string;
+  last_name!: string;
 
   @ApiProperty({
     example: 'dispatcher@pnp.gov.ph',
     description: 'Login email for the dispatcher account',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '+639171234567', required: false })
   @IsOptional()
@@ -325,29 +326,29 @@ export class CreateDispatcherDto {
   })
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 }
 
 // ─── Response DTOs (Swagger schema classes) ───────────────────────────────────
 
 export class OrganizationDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: 'Philippine National Police' })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: 'PNP' })
   short_name?: string;
 
   @ApiProperty({ example: 'PNP-001' })
-  code: string;
+  code!: string;
 
   @ApiProperty({ enum: OrganizationType, example: OrganizationType.POLICE })
-  type: OrganizationType;
+  type!: OrganizationType;
 
   @ApiProperty({ enum: OrganizationLevel, example: OrganizationLevel.NATIONAL })
-  level: OrganizationLevel;
+  level!: OrganizationLevel;
 
   @ApiPropertyOptional({ example: 'NCR' })
   region?: string;
@@ -376,7 +377,7 @@ export class OrganizationDto {
     example: ['RESPONDER', 'DISPATCHER'],
     description: 'Roles this organization is permitted to grant to its members',
   })
-  allowed_roles: OrgMemberRoleEnum[];
+  allowed_roles!: OrgMemberRoleEnum[];
 
   @ApiProperty({
     enum: ResponderTypeEnum,
@@ -385,7 +386,7 @@ export class OrganizationDto {
     description:
       'Responder types this organization is permitted to assign — set by System Admin',
   })
-  allowed_responder_types: ResponderTypeEnum[];
+  allowed_responder_types!: ResponderTypeEnum[];
 
   @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -395,47 +396,47 @@ export class OrganizationDto {
   parent_organization_id?: string;
 
   @ApiProperty({ example: true })
-  is_active: boolean;
+  is_active!: boolean;
 
   @ApiProperty({ example: '2026-03-19T08:00:00.000Z' })
-  created_at: string;
+  created_at!: string;
 
   @ApiProperty({
     example: 12,
     description: 'Number of ACTIVE members in this organization',
   })
-  member_count: number;
+  member_count!: number;
 }
 
 export class OrganizationListDto {
   @ApiProperty({ type: [OrganizationDto] })
-  organizations: OrganizationDto[];
+  organizations!: OrganizationDto[];
 
   @ApiProperty({ example: 42 })
-  total: number;
+  total!: number;
 
   @ApiProperty({ example: 1 })
-  page: number;
+  page!: number;
 
   @ApiProperty({ example: 10 })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({ example: 5 })
-  totalPages: number;
+  totalPages!: number;
 }
 
 export class MemberUserDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: 'juan@example.com' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'Juan' })
-  first_name: string;
+  first_name!: string;
 
   @ApiProperty({ example: 'dela Cruz' })
-  last_name: string;
+  last_name!: string;
 
   @ApiPropertyOptional({ example: '+639171234567' })
   phone?: string;
@@ -446,22 +447,22 @@ export class MemberUserDto {
 
 export class MemberWithUserDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  user_id: string;
+  user_id!: string;
 
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440002' })
-  organization_id: string;
+  organization_id!: string;
 
   @ApiProperty({
     enum: OrgMemberRoleEnum,
     example: OrgMemberRoleEnum.RESPONDER,
   })
-  org_role: OrgMemberRoleEnum;
+  org_role!: OrgMemberRoleEnum;
 
   @ApiProperty({ enum: OrganizationType, example: OrganizationType.POLICE })
-  org_type: OrganizationType;
+  org_type!: OrganizationType;
 
   @ApiPropertyOptional({
     enum: ResponderTypeEnum,
@@ -472,13 +473,13 @@ export class MemberWithUserDto {
       '(e.g., PATROL_OFFICER for POLICE, PARAMEDIC for AMBULANCE). ' +
       'Null for DISPATCHER and ORG_ADMIN members.',
   })
-  responder_type: ResponderTypeEnum | null;
+  responder_type!: ResponderTypeEnum | null;
 
   @ApiProperty({
     enum: ['INVITED', 'ACTIVE', 'DECLINED', 'SUSPENDED'],
     example: 'INVITED',
   })
-  status: string;
+  status!: string;
 
   @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440003',
@@ -490,24 +491,29 @@ export class MemberWithUserDto {
   reason?: string;
 
   @ApiProperty({ example: '2026-03-19T08:00:00.000Z' })
-  created_at: string;
+  created_at!: string;
 
   @ApiProperty({ example: '2026-03-19T08:00:00.000Z' })
-  updated_at: string;
+  updated_at!: string;
 
   @ApiProperty({ type: MemberUserDto })
-  user: MemberUserDto;
+  user!: MemberUserDto;
 }
 
 export class OrgConfigDto {
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  @IsUUID()
+  config_id!: string;
+
   @ApiProperty({ enum: ['RESPONDER', 'DISPATCHER'], example: 'RESPONDER' })
   @IsEnum(['RESPONDER', 'DISPATCHER'])
-  role: 'RESPONDER' | 'DISPATCHER';
+  role!: 'RESPONDER' | 'DISPATCHER';
 
   @ApiProperty({ example: 5, description: 'Kilometer radius for this role' })
   @IsNumber()
-  @MinLength(1)
-  kilometer_radius: number;
+  @Type(() => Number)
+  @Min(1)
+  kilometer_radius!: number;
 }
 
 export class UpdateOrgConfigsDto {
@@ -515,5 +521,5 @@ export class UpdateOrgConfigsDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrgConfigDto)
-  configs: OrgConfigDto[];
+  configs!: OrgConfigDto[];
 }

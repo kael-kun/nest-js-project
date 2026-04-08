@@ -746,7 +746,8 @@ export class OrganizationsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update organization configs',
-    description: 'Updates kilometer_radius for RESPONDER and/or DISPATCHER roles.',
+    description:
+      'Updates kilometer_radius for RESPONDER and/or DISPATCHER roles.',
   })
   @ApiParam({
     name: 'id',
