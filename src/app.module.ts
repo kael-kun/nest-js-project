@@ -12,6 +12,7 @@ import { UserRolesModule } from './user-roles/user-roles.module';
 import { CloudflareR2Module } from './r2_bucket/cloudflareR2.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ResponderModule } from './responder/responder.module';
+import { DispatchesModule } from './dispatches/dispatches.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -35,6 +36,7 @@ import { ResponderModule } from './responder/responder.module';
     EventsModule,
     NotificationsModule,
     ResponderModule,
+    DispatchesModule,
   ],
   controllers: [],
   providers: [
